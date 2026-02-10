@@ -4,8 +4,8 @@ from app.services.base import Service
 
 
 class TeamService(Service):
-    def __init__(self, db_path: str) -> None:
-        super().__init__(db_path)
+    def __init__(self, db: DBConnector) -> None:
+        super().__init__(db)
 
     def create_team(self, class_id: int, name: str, principal_user_id: int | None) -> int:
         with self.db.transaction() as conn:

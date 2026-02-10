@@ -6,8 +6,8 @@ from app.services.base import Service
 
 
 class TaskService(Service):
-    def __init__(self, db_path: str) -> None:
-        super().__init__(db_path)
+    def __init__(self, db: DBConnector) -> None:
+        super().__init__(db)
 
     def update_task_status(self, task_id: int, status: str) -> None:
         with self.db.transaction() as conn:

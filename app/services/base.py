@@ -4,5 +4,5 @@ from app.db.connector import DBConnector
 
 
 class Service:
-    def __init__(self, db_path: str) -> None:
-        self.db = DBConnector(db_path)
+    def __init__(self, db: DBConnector) -> None:
+        self.db = db

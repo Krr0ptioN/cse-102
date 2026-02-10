@@ -4,8 +4,8 @@ from app.services.base import Service
 
 
 class ClassService(Service):
-    def __init__(self, db_path: str) -> None:
-        super().__init__(db_path)
+    def __init__(self, db: DBConnector) -> None:
+        super().__init__(db)
 
     def create_class(self, name: str, term: str) -> int:
         with self.db.transaction() as conn:

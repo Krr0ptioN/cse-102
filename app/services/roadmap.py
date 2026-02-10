@@ -28,8 +28,8 @@ STATES: dict[str, RoadmapState] = {
 
 
 class RoadmapService(Service):
-    def __init__(self, db_path: str) -> None:
-        super().__init__(db_path)
+    def __init__(self, db: DBConnector) -> None:
+        super().__init__(db)
 
     def create_roadmap(self, team_id: int) -> int:
         with self.db.transaction() as conn:

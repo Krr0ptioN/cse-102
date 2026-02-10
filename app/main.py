@@ -3,6 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from pathlib import Path
 
+from app.db.connector import DBConnector
 from app.db.schema import init_db
 from app.services.class import ClassService
 from app.services.roadmap import RoadmapService
@@ -20,10 +21,11 @@ class App(tk.Tk):
         apply_theme(self)
         self.db_path = str(Path(__file__).resolve().parents[1] / "app.db")
         init_db(self.db_path)
-        self.class_service = ClassService(self.db_path)
-        self.team_service = TeamService(self.db_path)
-        self.roadmap_service = RoadmapService(self.db_path)
-        self.task_service = TaskService(self.db_path)
+        self.db = DBConnector(self.db_path)
+        self.class_service = ClassService(self.db)
+        self.team_service = TeamService(self.db)
+        self.roadmap_service = RoadmapService(self.db)
+        self.task_service = TaskService(self.db)
 
         self.container = tk.Frame(self)
         self.container.pack(fill="both", expand=True)

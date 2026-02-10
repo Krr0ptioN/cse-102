@@ -4,8 +4,8 @@ from app.services.base import Service
 
 
 class SchemaService(Service):
-    def __init__(self, db_path: str) -> None:
-        super().__init__(db_path)
+    def __init__(self, db: DBConnector) -> None:
+        super().__init__(db)
 
     def list_tables(self) -> list[str]:
         with self.db.connect() as conn:
