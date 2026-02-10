@@ -1,28 +1,65 @@
+from __future__ import annotations
+
 import tkinter as tk
+
+from app.ui.theme import palette
 
 
 class RoleSelectFrame(tk.Frame):
     def __init__(self, master, on_select):
-        super().__init__(master)
+        colors = palette()
+        super().__init__(master, bg=colors["bg"])
         self.on_select = on_select
         self._build()
 
     def _build(self) -> None:
-        title = tk.Label(self, text="Select a role", font=("Helvetica", 16, "bold"))
-        title.pack(pady=20)
+        colors = palette()
+        header = tk.Frame(self, bg=colors["bg"])
+        header.pack(fill="x", pady=30)
+        tk.Label(
+            header,
+            text="Project Lifecycle Engine",
+            font=("Georgia", 22, "bold"),
+            bg=colors["bg"],
+            fg=colors["text"],
+        ).pack()
+        tk.Label(
+            header,
+            text="Choose your workspace",
+            font=("Segoe UI", 11),
+            bg=colors["bg"],
+            fg=colors["muted"],
+        ).pack(pady=6)
 
-        teacher_btn = tk.Button(
-            self,
-            text="Teacher",
-            width=20,
-            command=lambda: self.on_select("teacher"),
-        )
-        teacher_btn.pack(pady=10)
+        cards = tk.Frame(self, bg=colors["bg"])
+        cards.pack(pady=10)
 
-        student_btn = tk.Button(
-            self,
-            text="Student",
-            width=20,
-            command=lambda: self.on_select("student"),
+        self._role_card(cards, "Teacher", "Manage classes, teams, and approvals", "teacher").grid(
+            row=0, column=0, padx=16
         )
-        student_btn.pack(pady=10)
+        self._role_card(cards, "Student", "Build roadmaps and update tasks", "student").grid(
+            row=0, column=1, padx=16
+        )
+
+    def _role_card(self, master, title: str, desc: str, role: str) -> tk.Frame:
+        colors = palette()
+        frame = tk.Frame(
+            master,
+            bg=colors["panel"],
+            highlightbackground=colors["border"],
+            highlightthickness=1,
+            padx=20,
+            pady=16,
+        )
+        tk.Label(frame, text=title, font=("Segoe UI", 14, "bold"), bg=colors["panel"]).pack(
+            anchor="w"
+        )
+        tk.Label(frame, text=desc, font=("Segoe UI", 10), bg=colors["panel"], fg=colors["muted"]).pack(
+            anchor="w", pady=6
+        )
+        tk.Button(
+            frame,
+            text=f"Open {title}",
+            command=lambda: self.on_select(role),
+        ).pack(anchor="w", pady=8)
+        return frame

@@ -20,6 +20,7 @@ from app.services.task_service import (
 from app.services.team_service import list_all_teams, list_team_members
 from app.services.validation import validate_roadmap
 from app.ui.charts import show_charts_window
+from app.ui.components import AppShell, DataTable, Section, StatCard
 
 
 class StudentDashboard(tk.Frame):
@@ -30,92 +31,101 @@ class StudentDashboard(tk.Frame):
         self.current_team_id: int | None = None
         self.current_roadmap_id: int | None = None
         self.current_roadmap_status: str | None = None
-        self._build()
+
+        self.shell = AppShell(self, "Student Workspace", on_back)
+        self.shell.pack(fill="both", expand=True)
+
+        self._build_layout()
         self._refresh_teams()
 
-    def _build(self) -> None:
-        header = tk.Frame(self)
-        header.pack(fill="x", pady=10)
-        tk.Button(header, text="Back", command=self.on_back).pack(side="left", padx=10)
-        tk.Label(header, text="Student Dashboard", font=("Helvetica", 16, "bold")).pack(
-            side="left", padx=10
-        )
+    def _build_layout(self) -> None:
+        content = self.shell.content
+        content.grid_rowconfigure(1, weight=1)
+        content.grid_columnconfigure(0, weight=1)
+        content.grid_columnconfigure(1, weight=1)
 
-        selector = tk.Frame(self)
-        selector.pack(fill="x", pady=5)
-        tk.Label(selector, text="Team").pack(side="left", padx=5)
-        self.team_select = ttk.Combobox(selector, state="readonly")
-        self.team_select.pack(side="left", padx=5)
-        self.team_select.bind("<<ComboboxSelected>>", lambda _e: self._load_roadmap())
+        self.stats_row = tk.Frame(content)
+        self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
+        self.stats_row.grid_columnconfigure((0, 1), weight=1)
 
-        content = tk.Frame(self)
-        content.pack(fill="both", expand=True, padx=10, pady=10)
+        self.stat_status = StatCard(self.stats_row, "Roadmap Status", "-")
+        self.stat_status.grid(row=0, column=0, padx=8, sticky="ew")
+        self.stat_done = StatCard(self.stats_row, "Tasks Done", "0")
+        self.stat_done.grid(row=0, column=1, padx=8, sticky="ew")
 
-        self._build_roadmap_panel(content)
-        self._build_task_panel(content)
+        self.roadmap_section = Section(content, "Roadmap Builder")
+        self.roadmap_section.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
+        self._build_roadmap_panel(self.roadmap_section.body)
+
+        self.task_section = Section(content, "Tasks")
+        self.task_section.grid(row=1, column=1, sticky="nsew", padx=8, pady=8)
+        self._build_task_panel(self.task_section.body)
 
     def _build_roadmap_panel(self, parent: tk.Frame) -> None:
-        frame = tk.LabelFrame(parent, text="Roadmap Builder")
-        frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        selector = tk.Frame(parent)
+        selector.pack(fill="x", pady=4)
+        tk.Label(selector, text="Team").pack(side="left", padx=4)
+        self.team_select = ttk.Combobox(selector, state="readonly")
+        self.team_select.pack(side="left", padx=4)
+        self.team_select.bind("<<ComboboxSelected>>", lambda _e: self._load_roadmap())
 
-        controls = tk.Frame(frame)
-        controls.pack(fill="x", padx=5, pady=5)
+        controls = tk.Frame(parent)
+        controls.pack(fill="x", pady=6)
 
         self.phase_name_entry = tk.Entry(controls, width=20)
-        self.phase_name_entry.grid(row=0, column=0, padx=5)
+        self.phase_name_entry.grid(row=0, column=0, padx=4)
         tk.Button(controls, text="Add Phase", command=self._add_phase).grid(
-            row=0, column=1, padx=5
+            row=0, column=1, padx=4
         )
 
         self.task_title_entry = tk.Entry(controls, width=20)
-        self.task_title_entry.grid(row=1, column=0, padx=5)
+        self.task_title_entry.grid(row=1, column=0, padx=4)
         self.task_weight_entry = tk.Entry(controls, width=8)
-        self.task_weight_entry.grid(row=1, column=1, padx=5, sticky="w")
+        self.task_weight_entry.grid(row=1, column=1, padx=4, sticky="w")
         tk.Button(controls, text="Add Task", command=self._add_task).grid(
-            row=1, column=2, padx=5
+            row=1, column=2, padx=4
         )
 
-        tk.Button(controls, text="Submit Roadmap", command=self._submit_roadmap).grid(
-            row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w"
+        action_row = tk.Frame(parent)
+        action_row.pack(fill="x", pady=4)
+        tk.Button(action_row, text="Submit Roadmap", command=self._submit_roadmap).pack(
+            side="left", padx=4
         )
-
-        tk.Button(controls, text="View Charts", command=self._show_charts).grid(
-            row=2, column=2, padx=5
+        tk.Button(action_row, text="View Charts", command=self._show_charts).pack(
+            side="left", padx=4
         )
+        self.roadmap_status_label = tk.Label(action_row, text="No roadmap")
+        self.roadmap_status_label.pack(side="right", padx=4)
 
-        self.roadmap_status_label = tk.Label(controls, text="No roadmap")
-        self.roadmap_status_label.grid(row=3, column=0, columnspan=3, sticky="w", padx=5)
-
-        self.roadmap_tree = ttk.Treeview(frame, show="tree")
-        self.roadmap_tree.pack(fill="both", expand=True, padx=5, pady=5)
+        self.roadmap_tree = ttk.Treeview(parent, show="tree", height=10)
+        self.roadmap_tree.pack(fill="both", expand=True, pady=6)
 
     def _build_task_panel(self, parent: tk.Frame) -> None:
-        frame = tk.LabelFrame(parent, text="Tasks")
-        frame.pack(side="right", fill="both", expand=True, padx=5, pady=5)
+        self.task_table = DataTable(parent, ["Id", "Task", "Status", "Weight"], height=7)
+        self.task_table.pack(fill="both", expand=True, pady=6)
+        self.task_table.bind("<<TreeviewSelect>>", lambda _e: self._refresh_updates())
 
-        self.task_list = tk.Listbox(frame)
-        self.task_list.pack(fill="both", expand=True, padx=5, pady=5)
-        self.task_list.bind("<<ListboxSelect>>", lambda _e: self._refresh_updates())
-
-        actions = tk.Frame(frame)
-        actions.pack(fill="x", padx=5, pady=5)
+        actions = tk.Frame(parent)
+        actions.pack(fill="x", pady=4)
         tk.Button(actions, text="In Progress", command=lambda: self._set_task_status("In Progress")).pack(
-            side="left", padx=5
+            side="left", padx=4
         )
         tk.Button(actions, text="Done", command=lambda: self._set_task_status("Done")).pack(
-            side="left", padx=5
+            side="left", padx=4
         )
 
-        self.member_select = ttk.Combobox(frame, state="readonly")
-        self.member_select.pack(fill="x", padx=5, pady=5)
+        member_row = tk.Frame(parent)
+        member_row.pack(fill="x", pady=4)
+        tk.Label(member_row, text="Update as").pack(side="left", padx=4)
+        self.member_select = ttk.Combobox(member_row, state="readonly")
+        self.member_select.pack(side="left", padx=4)
 
-        self.update_text = tk.Text(frame, height=4)
-        self.update_text.pack(fill="x", padx=5, pady=5)
+        self.update_text = tk.Text(parent, height=4)
+        self.update_text.pack(fill="x", pady=6)
+        tk.Button(parent, text="Add Update", command=self._add_update).pack(anchor="e")
 
-        tk.Button(frame, text="Add Update", command=self._add_update).pack(pady=5)
-
-        self.update_list = tk.Listbox(frame, height=6)
-        self.update_list.pack(fill="both", expand=True, padx=5, pady=5)
+        self.update_table = DataTable(parent, ["User", "Update", "Time"], height=6)
+        self.update_table.pack(fill="both", expand=True, pady=6)
 
     def _refresh_teams(self) -> None:
         teams = list_all_teams(self.db_path)
@@ -142,6 +152,7 @@ class StudentDashboard(tk.Frame):
         self._refresh_team_members()
         self._refresh_roadmap_tree()
         self._refresh_task_list()
+        self._refresh_stats()
 
     def _ensure_roadmap(self) -> int | None:
         if not self.current_team_id:
@@ -185,6 +196,7 @@ class StudentDashboard(tk.Frame):
         self.task_weight_entry.delete(0, tk.END)
         self._refresh_roadmap_tree()
         self._refresh_task_list()
+        self._refresh_stats()
 
     def _submit_roadmap(self) -> None:
         if not self.current_roadmap_id:
@@ -208,6 +220,7 @@ class StudentDashboard(tk.Frame):
         submit_roadmap(self.db_path, self.current_roadmap_id)
         self.current_roadmap_status = "Submitted"
         self.roadmap_status_label.config(text="Status: Submitted")
+        self._refresh_stats()
 
     def _refresh_roadmap_tree(self) -> None:
         for row in self.roadmap_tree.get_children():
@@ -229,15 +242,13 @@ class StudentDashboard(tk.Frame):
                 )
 
     def _refresh_task_list(self) -> None:
-        self.task_list.delete(0, tk.END)
         if not self.current_roadmap_id:
+            self.task_table.set_rows([])
             return
         self.tasks_cache = list_tasks_for_roadmap(self.db_path, self.current_roadmap_id)
-        for task in self.tasks_cache:
-            self.task_list.insert(
-                tk.END,
-                f"{task['id']} {task['title']} [{task['status']}]",
-            )
+        rows = [(t["id"], t["title"], t["status"], t["weight"]) for t in self.tasks_cache]
+        self.task_table.set_rows(rows)
+        self._refresh_stats()
 
     def _set_task_status(self, status: str) -> None:
         if self.current_roadmap_status != "Approved":
@@ -269,15 +280,13 @@ class StudentDashboard(tk.Frame):
         self._refresh_updates()
 
     def _refresh_updates(self) -> None:
-        self.update_list.delete(0, tk.END)
         task_id = self._selected_task_id()
         if not task_id:
+            self.update_table.set_rows([])
             return
         updates = list_updates_for_task(self.db_path, task_id)
-        for upd in updates:
-            self.update_list.insert(
-                tk.END, f"{upd['user']}: {upd['text']} ({upd['created_at']})"
-            )
+        rows = [(u["user"], u["text"], u["created_at"]) for u in updates]
+        self.update_table.set_rows(rows)
 
     def _refresh_team_members(self) -> None:
         if not self.current_team_id:
@@ -287,6 +296,12 @@ class StudentDashboard(tk.Frame):
         self.member_select["values"] = choices
         if choices:
             self.member_select.current(0)
+
+    def _refresh_stats(self) -> None:
+        status = self.current_roadmap_status or "-"
+        self.stat_status.set_value(status)
+        done = len([t for t in getattr(self, "tasks_cache", []) if t["status"] == "Done"])
+        self.stat_done.set_value(str(done))
 
     def _selected_phase_id(self) -> int | None:
         selection = self.roadmap_tree.selection()
@@ -302,11 +317,10 @@ class StudentDashboard(tk.Frame):
         return None
 
     def _selected_task_id(self) -> int | None:
-        selection = self.task_list.curselection()
+        selection = self.task_table.selection()
         if not selection:
             return None
-        entry = self.task_list.get(selection[0])
-        return int(entry.split(" ", 1)[0])
+        return int(self.task_table.item(selection[0], "values")[0])
 
     def _show_charts(self) -> None:
         if not self.current_roadmap_id:

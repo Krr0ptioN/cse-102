@@ -14,6 +14,7 @@ from app.services.team_service import (
     update_team_principal,
 )
 from app.ui.charts import show_charts_window
+from app.ui.components import AppShell, DataTable, Section, StatCard
 
 
 class TeacherDashboard(tk.Frame):
@@ -22,113 +23,135 @@ class TeacherDashboard(tk.Frame):
         self.db_path = db_path
         self.on_back = on_back
         self.class_id: int | None = None
+        self.teams_cache: list[dict] = []
 
-        self._build()
+        self.shell = AppShell(self, "Teacher Dashboard", on_back)
+        self.shell.pack(fill="both", expand=True)
+
+        self._build_layout()
         self._refresh_students()
+        self._refresh_teams()
+        self._refresh_roadmaps()
+        self._refresh_stats()
 
-    def _build(self) -> None:
-        header = tk.Frame(self)
-        header.pack(fill="x", pady=10)
-        tk.Button(header, text="Back", command=self.on_back).pack(side="left", padx=10)
-        tk.Label(header, text="Teacher Dashboard", font=("Helvetica", 16, "bold")).pack(
-            side="left", padx=10
-        )
+    def _build_layout(self) -> None:
+        content = self.shell.content
+        content.grid_rowconfigure(1, weight=0)
+        content.grid_rowconfigure(2, weight=1)
+        content.grid_rowconfigure(3, weight=1)
+        content.grid_columnconfigure(0, weight=1)
+        content.grid_columnconfigure(1, weight=1)
 
-        content = tk.Frame(self)
-        content.pack(fill="both", expand=True, padx=10, pady=10)
+        self.stats_row = tk.Frame(content)
+        self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
+        self.stats_row.grid_columnconfigure((0, 1, 2), weight=1)
 
-        self._build_class_panel(content)
-        self._build_student_panel(content)
-        self._build_team_panel(content)
-        self._build_roadmap_panel(content)
+        self.stat_students = StatCard(self.stats_row, "Students", "0")
+        self.stat_students.grid(row=0, column=0, padx=8, sticky="ew")
+        self.stat_teams = StatCard(self.stats_row, "Teams", "0")
+        self.stat_teams.grid(row=0, column=1, padx=8, sticky="ew")
+        self.stat_roadmaps = StatCard(self.stats_row, "Roadmaps", "0")
+        self.stat_roadmaps.grid(row=0, column=2, padx=8, sticky="ew")
 
-        tk.Button(self, text="View Class Charts", command=self._show_charts).pack(
-            pady=5
+        self.class_section = Section(content, "Class Setup")
+        self.class_section.grid(row=1, column=0, sticky="ew", padx=8, pady=8)
+        self._build_class_panel(self.class_section.body)
+
+        self.student_section = Section(content, "Student Roster")
+        self.student_section.grid(row=2, column=0, sticky="nsew", padx=8, pady=8)
+        self._build_student_panel(self.student_section.body)
+
+        self.team_section = Section(content, "Teams")
+        self.team_section.grid(row=1, column=1, rowspan=2, sticky="nsew", padx=8, pady=8)
+        self._build_team_panel(self.team_section.body)
+
+        self.roadmap_section = Section(content, "Roadmap Review")
+        self.roadmap_section.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
+        self._build_roadmap_panel(self.roadmap_section.body)
+
+        tk.Button(self.shell.topbar.actions, text="View Charts", command=self._show_charts).pack(
+            side="left", padx=6
         )
 
     def _build_class_panel(self, parent: tk.Frame) -> None:
-        frame = tk.LabelFrame(parent, text="Class")
-        frame.pack(fill="x", pady=5)
+        tk.Label(parent, text="Class Name").grid(row=0, column=0, sticky="w", pady=4)
+        tk.Label(parent, text="Term").grid(row=0, column=2, sticky="w", pady=4)
 
-        tk.Label(frame, text="Name").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        tk.Label(frame, text="Term").grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        self.class_name_entry = tk.Entry(parent, width=28)
+        self.class_term_entry = tk.Entry(parent, width=18)
+        self.class_name_entry.grid(row=1, column=0, padx=4, pady=4)
+        self.class_term_entry.grid(row=1, column=2, padx=4, pady=4)
 
-        self.class_name_entry = tk.Entry(frame, width=30)
-        self.class_term_entry = tk.Entry(frame, width=20)
-        self.class_name_entry.grid(row=0, column=1, padx=5, pady=5)
-        self.class_term_entry.grid(row=0, column=3, padx=5, pady=5)
-
-        tk.Button(frame, text="Create Class", command=self._create_class).grid(
-            row=0, column=4, padx=5, pady=5
+        tk.Button(parent, text="Create Class", command=self._create_class).grid(
+            row=1, column=3, padx=6, pady=4
         )
 
-        self.class_status = tk.Label(frame, text="No class selected")
-        self.class_status.grid(row=1, column=0, columnspan=5, sticky="w", padx=5)
+        self.class_status = tk.Label(parent, text="No class selected")
+        self.class_status.grid(row=2, column=0, columnspan=4, sticky="w")
 
     def _build_student_panel(self, parent: tk.Frame) -> None:
-        frame = tk.LabelFrame(parent, text="Students")
-        frame.pack(fill="x", pady=5)
+        form = tk.Frame(parent)
+        form.pack(fill="x", pady=6)
 
-        tk.Label(frame, text="Name").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        tk.Label(frame, text="Email").grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        tk.Label(form, text="Name").grid(row=0, column=0, sticky="w")
+        tk.Label(form, text="Email").grid(row=0, column=2, sticky="w")
 
-        self.student_name_entry = tk.Entry(frame, width=25)
-        self.student_email_entry = tk.Entry(frame, width=30)
-        self.student_name_entry.grid(row=0, column=1, padx=5, pady=5)
-        self.student_email_entry.grid(row=0, column=3, padx=5, pady=5)
+        self.student_name_entry = tk.Entry(form, width=22)
+        self.student_email_entry = tk.Entry(form, width=28)
+        self.student_name_entry.grid(row=1, column=0, padx=4, pady=4)
+        self.student_email_entry.grid(row=1, column=2, padx=4, pady=4)
 
-        tk.Button(frame, text="Add Student", command=self._add_student).grid(
-            row=0, column=4, padx=5, pady=5
+        tk.Button(form, text="Add Student", command=self._add_student).grid(
+            row=1, column=3, padx=6, pady=4
         )
 
-        self.student_list = tk.Listbox(frame, height=4)
-        self.student_list.grid(row=1, column=0, columnspan=5, sticky="ew", padx=5, pady=5)
+        self.student_table = DataTable(parent, ["Id", "Name", "Email"], height=6)
+        self.student_table.pack(fill="both", expand=True, pady=6)
 
     def _build_team_panel(self, parent: tk.Frame) -> None:
-        frame = tk.LabelFrame(parent, text="Teams")
-        frame.pack(fill="x", pady=5)
+        form = tk.Frame(parent)
+        form.pack(fill="x", pady=6)
 
-        tk.Label(frame, text="Team Name").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.team_name_entry = tk.Entry(frame, width=25)
-        self.team_name_entry.grid(row=0, column=1, padx=5, pady=5)
-
-        tk.Button(frame, text="Create Team", command=self._create_team).grid(
-            row=0, column=2, padx=5, pady=5
+        tk.Label(form, text="Team Name").grid(row=0, column=0, sticky="w")
+        self.team_name_entry = tk.Entry(form, width=22)
+        self.team_name_entry.grid(row=1, column=0, padx=4, pady=4)
+        tk.Button(form, text="Create Team", command=self._create_team).grid(
+            row=1, column=1, padx=6
         )
 
-        tk.Label(frame, text="Teams").grid(row=1, column=0, sticky="w", padx=5)
-        self.team_list = tk.Listbox(frame, height=4)
-        self.team_list.grid(row=2, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        self.team_list.bind("<<ListboxSelect>>", lambda _e: self._refresh_team_members())
+        tables = tk.Frame(parent)
+        tables.pack(fill="both", expand=True)
+        tables.grid_columnconfigure(0, weight=1)
+        tables.grid_columnconfigure(1, weight=1)
 
-        tk.Label(frame, text="Members").grid(row=1, column=2, sticky="w", padx=5)
-        self.team_member_list = tk.Listbox(frame, height=4)
-        self.team_member_list.grid(row=2, column=2, columnspan=2, sticky="ew", padx=5, pady=5)
+        self.team_table = DataTable(tables, ["Id", "Team", "Principal"], height=6)
+        self.team_table.grid(row=0, column=0, sticky="nsew", padx=4, pady=6)
+        self.team_table.bind("<<TreeviewSelect>>", lambda _e: self._refresh_team_members())
 
-        self.member_select = ttk.Combobox(frame, state="readonly")
-        self.member_select.grid(row=3, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        tk.Button(frame, text="Add Member", command=self._add_team_member).grid(
-            row=3, column=2, padx=5, pady=5
+        self.team_member_table = DataTable(tables, ["Id", "Member", "Email"], height=6)
+        self.team_member_table.grid(row=0, column=1, sticky="nsew", padx=4, pady=6)
+
+        actions = tk.Frame(parent)
+        actions.pack(fill="x")
+
+        self.member_select = ttk.Combobox(actions, state="readonly")
+        self.member_select.pack(side="left", padx=4)
+        tk.Button(actions, text="Add Member", command=self._add_team_member).pack(
+            side="left", padx=4
         )
 
-        self.principal_select = ttk.Combobox(frame, state="readonly")
-        self.principal_select.grid(row=4, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        tk.Button(frame, text="Set Principal", command=self._set_principal).grid(
-            row=4, column=2, padx=5, pady=5
+        self.principal_select = ttk.Combobox(actions, state="readonly")
+        self.principal_select.pack(side="left", padx=4)
+        tk.Button(actions, text="Set Principal", command=self._set_principal).pack(
+            side="left", padx=4
         )
 
     def _build_roadmap_panel(self, parent: tk.Frame) -> None:
-        frame = tk.LabelFrame(parent, text="Roadmap Review")
-        frame.pack(fill="both", expand=True, pady=5)
+        self.roadmap_table = DataTable(parent, ["Id", "Team", "Status"], height=6)
+        self.roadmap_table.pack(fill="both", expand=True, pady=6)
 
-        columns = ("id", "team", "status")
-        self.roadmap_tree = ttk.Treeview(frame, columns=columns, show="headings", height=5)
-        for col in columns:
-            self.roadmap_tree.heading(col, text=col.title())
-        self.roadmap_tree.pack(fill="both", expand=True, padx=5, pady=5)
-
-        tk.Button(frame, text="Approve Selected", command=self._approve_roadmap).pack(
-            pady=5
+        tk.Button(parent, text="Approve Selected", command=self._approve_roadmap).pack(
+            anchor="e", pady=4
         )
 
     def _create_class(self) -> None:
@@ -141,6 +164,7 @@ class TeacherDashboard(tk.Frame):
         self.class_status.config(text=f"Active class: {name} ({term})")
         self._refresh_teams()
         self._refresh_roadmaps()
+        self._refresh_stats()
 
     def _add_student(self) -> None:
         name = self.student_name_entry.get().strip()
@@ -152,6 +176,7 @@ class TeacherDashboard(tk.Frame):
         self.student_name_entry.delete(0, tk.END)
         self.student_email_entry.delete(0, tk.END)
         self._refresh_students()
+        self._refresh_stats()
 
     def _create_team(self) -> None:
         if not self.class_id:
@@ -165,6 +190,7 @@ class TeacherDashboard(tk.Frame):
         self.team_name_entry.delete(0, tk.END)
         self._refresh_teams()
         self._refresh_roadmaps()
+        self._refresh_stats()
 
     def _add_team_member(self) -> None:
         team_id = self._selected_team_id()
@@ -193,52 +219,58 @@ class TeacherDashboard(tk.Frame):
         self._refresh_teams()
 
     def _approve_roadmap(self) -> None:
-        item = self.roadmap_tree.selection()
+        item = self.roadmap_table.selection()
         if not item:
             messagebox.showwarning("No roadmap", "Select a roadmap to approve.")
             return
-        roadmap_id = int(self.roadmap_tree.item(item[0], "values")[0])
+        roadmap_id = int(self.roadmap_table.item(item[0], "values")[0])
         approve_roadmap(self.db_path, roadmap_id)
         self._refresh_roadmaps()
+        self._refresh_stats()
 
     def _refresh_students(self) -> None:
         students = list_users(self.db_path, role="student")
-        self.student_list.delete(0, tk.END)
-        choices = []
-        for student in students:
-            self.student_list.insert(tk.END, f"{student['name']} ({student['email']})")
-            choices.append(f"{student['id']} {student['name']}")
+        rows = [(s["id"], s["name"], s["email"]) for s in students]
+        self.student_table.set_rows(rows)
+        choices = [f"{s['id']} {s['name']}" for s in students]
         self.member_select["values"] = choices
         self.principal_select["values"] = choices
 
     def _refresh_teams(self) -> None:
-        self.team_list.delete(0, tk.END)
         if not self.class_id:
+            self.team_table.set_rows([])
             return
         self.teams_cache = list_teams(self.db_path, self.class_id)
+        rows = []
         for team in self.teams_cache:
-            self.team_list.insert(tk.END, f"{team['id']} {team['name']}")
+            principal = team["principal_user_id"] or "-"
+            rows.append((team["id"], team["name"], principal))
+        self.team_table.set_rows(rows)
 
     def _refresh_team_members(self) -> None:
-        self.team_member_list.delete(0, tk.END)
         team_id = self._selected_team_id()
         if not team_id:
+            self.team_member_table.set_rows([])
             return
         members = list_team_members(self.db_path, team_id)
-        for member in members:
-            self.team_member_list.insert(
-                tk.END, f"{member['name']} ({member['email']})"
-            )
+        rows = [(m["id"], m["name"], m["email"]) for m in members]
+        self.team_member_table.set_rows(rows)
 
     def _refresh_roadmaps(self) -> None:
-        for row in self.roadmap_tree.get_children():
-            self.roadmap_tree.delete(row)
         if not self.class_id:
+            self.roadmap_table.set_rows([])
             return
-        for roadmap in list_roadmaps_for_class(self.db_path, self.class_id):
-            self.roadmap_tree.insert(
-                "", "end", values=(roadmap["id"], roadmap["team"], roadmap["status"])
-            )
+        roadmaps = list_roadmaps_for_class(self.db_path, self.class_id)
+        rows = [(r["id"], r["team"], r["status"]) for r in roadmaps]
+        self.roadmap_table.set_rows(rows)
+
+    def _refresh_stats(self) -> None:
+        students = list_users(self.db_path, role="student")
+        teams = list_teams(self.db_path, self.class_id) if self.class_id else []
+        roadmaps = list_roadmaps_for_class(self.db_path, self.class_id) if self.class_id else []
+        self.stat_students.set_value(str(len(students)))
+        self.stat_teams.set_value(str(len(teams)))
+        self.stat_roadmaps.set_value(str(len(roadmaps)))
 
     def _show_charts(self) -> None:
         if not self.class_id:
@@ -248,8 +280,7 @@ class TeacherDashboard(tk.Frame):
         show_charts_window(self, "Class Charts", tasks)
 
     def _selected_team_id(self) -> int | None:
-        selection = self.team_list.curselection()
+        selection = self.team_table.selection()
         if not selection:
             return None
-        entry = self.team_list.get(selection[0])
-        return int(entry.split(" ", 1)[0])
+        return int(self.team_table.item(selection[0], "values")[0])

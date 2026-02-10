@@ -4,21 +4,31 @@ import tkinter as tk
 from tkinter import ttk
 
 
-def apply_theme(root: tk.Tk) -> None:
-    colors = {
-        "bg": "#f7f5f0",
+PALETTE = {
+        "bg": "#f2f4f3",
         "panel": "#ffffff",
-        "border": "#d9d2c4",
-        "text": "#1d1b17",
-        "muted": "#6a6256",
-        "accent": "#1f3a5f",
-        "accent_light": "#e0e6ef",
-    }
+        "sidebar": "#e8eceb",
+        "border": "#cfd8d5",
+        "text": "#1b1f1e",
+        "muted": "#5f6b68",
+        "accent": "#0f766e",
+        "accent_light": "#dff3f1",
+}
+
+
+def palette() -> dict[str, str]:
+    return dict(PALETTE)
+
+
+def apply_theme(root: tk.Tk) -> None:
+    colors = PALETTE
 
     root.configure(bg=colors["bg"])
 
+    root.option_add("*Font", "Segoe UI 10")
     root.option_add("*Background", colors["bg"])
     root.option_add("*Foreground", colors["text"])
+    root.option_add("*Frame.Background", colors["bg"])
     root.option_add("*Entry.Background", colors["panel"])
     root.option_add("*Entry.Foreground", colors["text"])
     root.option_add("*Text.Background", colors["panel"])
@@ -33,35 +43,23 @@ def apply_theme(root: tk.Tk) -> None:
     style = ttk.Style(root)
     style.theme_use("clam")
 
-    style.configure(
-        "TFrame",
-        background=colors["bg"],
-    )
-    style.configure(
-        "TLabel",
-        background=colors["bg"],
-        foreground=colors["text"],
-    )
+    style.configure("TFrame", background=colors["bg"])
+    style.configure("TLabel", background=colors["bg"], foreground=colors["text"])
     style.configure(
         "TButton",
         background=colors["accent_light"],
         foreground=colors["accent"],
         bordercolor=colors["border"],
-        focusthickness=3,
+        focusthickness=2,
         focuscolor=colors["accent"],
-        padding=(8, 4),
+        padding=(10, 6),
     )
     style.map(
         "TButton",
         background=[("active", colors["accent"])],
         foreground=[("active", "#ffffff")],
     )
-    style.configure(
-        "TLabelframe",
-        background=colors["bg"],
-        foreground=colors["text"],
-        bordercolor=colors["border"],
-    )
+    style.configure("TLabelframe", background=colors["bg"], foreground=colors["text"])
     style.configure(
         "TLabelframe.Label",
         background=colors["bg"],
@@ -74,7 +72,7 @@ def apply_theme(root: tk.Tk) -> None:
         fieldbackground=colors["panel"],
         foreground=colors["text"],
         bordercolor=colors["border"],
-        rowheight=22,
+        rowheight=26,
     )
     style.map(
         "Treeview",
@@ -87,3 +85,7 @@ def apply_theme(root: tk.Tk) -> None:
         background=colors["panel"],
         foreground=colors["text"],
     )
+
+    style.configure("Sidebar.TFrame", background=colors["sidebar"])
+    style.configure("Card.TFrame", background=colors["panel"])
+    style.configure("Topbar.TFrame", background=colors["panel"])
