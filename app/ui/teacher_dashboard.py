@@ -5,6 +5,7 @@ from tkinter import messagebox, ttk
 
 from app.services.class_service import create_class, create_user, list_users
 from app.services.roadmap_service import approve_roadmap, list_roadmaps_for_class
+from app.services.task_service import list_tasks_for_class
 from app.services.team_service import (
     add_team_member,
     create_team,
@@ -12,6 +13,7 @@ from app.services.team_service import (
     list_teams,
     update_team_principal,
 )
+from app.ui.charts import show_charts_window
 
 
 class TeacherDashboard(tk.Frame):
@@ -39,6 +41,10 @@ class TeacherDashboard(tk.Frame):
         self._build_student_panel(content)
         self._build_team_panel(content)
         self._build_roadmap_panel(content)
+
+        tk.Button(self, text="View Class Charts", command=self._show_charts).pack(
+            pady=5
+        )
 
     def _build_class_panel(self, parent: tk.Frame) -> None:
         frame = tk.LabelFrame(parent, text="Class")
@@ -233,6 +239,13 @@ class TeacherDashboard(tk.Frame):
             self.roadmap_tree.insert(
                 "", "end", values=(roadmap["id"], roadmap["team"], roadmap["status"])
             )
+
+    def _show_charts(self) -> None:
+        if not self.class_id:
+            messagebox.showwarning("No class", "Create a class first.")
+            return
+        tasks = list_tasks_for_class(self.db_path, self.class_id)
+        show_charts_window(self, "Class Charts", tasks)
 
     def _selected_team_id(self) -> int | None:
         selection = self.team_list.curselection()

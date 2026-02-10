@@ -19,6 +19,7 @@ from app.services.task_service import (
 )
 from app.services.team_service import list_all_teams, list_team_members
 from app.services.validation import validate_roadmap
+from app.ui.charts import show_charts_window
 
 
 class StudentDashboard(tk.Frame):
@@ -78,8 +79,12 @@ class StudentDashboard(tk.Frame):
             row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w"
         )
 
+        tk.Button(controls, text="View Charts", command=self._show_charts).grid(
+            row=2, column=2, padx=5
+        )
+
         self.roadmap_status_label = tk.Label(controls, text="No roadmap")
-        self.roadmap_status_label.grid(row=2, column=2, padx=5)
+        self.roadmap_status_label.grid(row=3, column=0, columnspan=3, sticky="w", padx=5)
 
         self.roadmap_tree = ttk.Treeview(frame, show="tree")
         self.roadmap_tree.pack(fill="both", expand=True, padx=5, pady=5)
@@ -302,3 +307,10 @@ class StudentDashboard(tk.Frame):
             return None
         entry = self.task_list.get(selection[0])
         return int(entry.split(" ", 1)[0])
+
+    def _show_charts(self) -> None:
+        if not self.current_roadmap_id:
+            messagebox.showwarning("No roadmap", "Create a roadmap first.")
+            return
+        tasks = list_tasks_for_roadmap(self.db_path, self.current_roadmap_id)
+        show_charts_window(self, "Team Charts", tasks)

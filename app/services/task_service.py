@@ -71,3 +71,26 @@ def list_updates_for_task(db_path: str, task_id: int) -> list[dict]:
         ]
     finally:
         conn.close()
+
+
+def list_tasks_for_class(db_path: str, class_id: int) -> list[dict]:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            """
+            SELECT tasks.id, tasks.title, tasks.weight, tasks.status
+            FROM tasks
+            JOIN phases ON phases.id = tasks.phase_id
+            JOIN roadmaps ON roadmaps.id = phases.roadmap_id
+            JOIN teams ON teams.id = roadmaps.team_id
+            WHERE teams.class_id = ?
+            ORDER BY tasks.id
+            """,
+            (class_id,),
+        )
+        return [
+            {"id": row[0], "title": row[1], "weight": row[2], "status": row[3]}
+            for row in cur.fetchall()
+        ]
+    finally:
+        conn.close()
