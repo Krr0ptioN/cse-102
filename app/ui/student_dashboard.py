@@ -11,7 +11,13 @@ from app.services.roadmap_service import (
     list_phases_with_tasks,
     submit_roadmap,
 )
-from app.services.team_service import list_all_teams
+from app.services.task_service import (
+    add_update,
+    list_tasks_for_roadmap,
+    list_updates_for_task,
+    update_task_status,
+)
+from app.services.team_service import list_all_teams, list_team_members
 from app.services.validation import validate_roadmap
 
 
@@ -84,11 +90,27 @@ class StudentDashboard(tk.Frame):
 
         self.task_list = tk.Listbox(frame)
         self.task_list.pack(fill="both", expand=True, padx=5, pady=5)
+        self.task_list.bind("<<ListboxSelect>>", lambda _e: self._refresh_updates())
 
-        self.update_text = tk.Text(frame, height=5)
+        actions = tk.Frame(frame)
+        actions.pack(fill="x", padx=5, pady=5)
+        tk.Button(actions, text="In Progress", command=lambda: self._set_task_status("In Progress")).pack(
+            side="left", padx=5
+        )
+        tk.Button(actions, text="Done", command=lambda: self._set_task_status("Done")).pack(
+            side="left", padx=5
+        )
+
+        self.member_select = ttk.Combobox(frame, state="readonly")
+        self.member_select.pack(fill="x", padx=5, pady=5)
+
+        self.update_text = tk.Text(frame, height=4)
         self.update_text.pack(fill="x", padx=5, pady=5)
 
-        tk.Button(frame, text="Add Update").pack(pady=5)
+        tk.Button(frame, text="Add Update", command=self._add_update).pack(pady=5)
+
+        self.update_list = tk.Listbox(frame, height=6)
+        self.update_list.pack(fill="both", expand=True, padx=5, pady=5)
 
     def _refresh_teams(self) -> None:
         teams = list_all_teams(self.db_path)
@@ -112,7 +134,9 @@ class StudentDashboard(tk.Frame):
             self.current_roadmap_id = None
             self.current_roadmap_status = None
             self.roadmap_status_label.config(text="No roadmap")
+        self._refresh_team_members()
         self._refresh_roadmap_tree()
+        self._refresh_task_list()
 
     def _ensure_roadmap(self) -> int | None:
         if not self.current_team_id:
@@ -155,6 +179,7 @@ class StudentDashboard(tk.Frame):
         self.task_title_entry.delete(0, tk.END)
         self.task_weight_entry.delete(0, tk.END)
         self._refresh_roadmap_tree()
+        self._refresh_task_list()
 
     def _submit_roadmap(self) -> None:
         if not self.current_roadmap_id:
@@ -198,6 +223,66 @@ class StudentDashboard(tk.Frame):
                     text=f"Task: {task['title']} (w{task['weight']})",
                 )
 
+    def _refresh_task_list(self) -> None:
+        self.task_list.delete(0, tk.END)
+        if not self.current_roadmap_id:
+            return
+        self.tasks_cache = list_tasks_for_roadmap(self.db_path, self.current_roadmap_id)
+        for task in self.tasks_cache:
+            self.task_list.insert(
+                tk.END,
+                f"{task['id']} {task['title']} [{task['status']}]",
+            )
+
+    def _set_task_status(self, status: str) -> None:
+        if self.current_roadmap_status != "Approved":
+            messagebox.showwarning("Not approved", "Roadmap is not approved yet.")
+            return
+        task_id = self._selected_task_id()
+        if not task_id:
+            messagebox.showwarning("No task", "Select a task first.")
+            return
+        update_task_status(self.db_path, task_id, status)
+        self._refresh_task_list()
+
+    def _add_update(self) -> None:
+        task_id = self._selected_task_id()
+        if not task_id:
+            messagebox.showwarning("No task", "Select a task first.")
+            return
+        selection = self.member_select.get()
+        if not selection:
+            messagebox.showwarning("No member", "Select a member for this update.")
+            return
+        text = self.update_text.get("1.0", tk.END).strip()
+        if not text:
+            messagebox.showwarning("Missing data", "Enter an update note.")
+            return
+        user_id = int(selection.split(" ", 1)[0])
+        add_update(self.db_path, task_id, user_id, text)
+        self.update_text.delete("1.0", tk.END)
+        self._refresh_updates()
+
+    def _refresh_updates(self) -> None:
+        self.update_list.delete(0, tk.END)
+        task_id = self._selected_task_id()
+        if not task_id:
+            return
+        updates = list_updates_for_task(self.db_path, task_id)
+        for upd in updates:
+            self.update_list.insert(
+                tk.END, f"{upd['user']}: {upd['text']} ({upd['created_at']})"
+            )
+
+    def _refresh_team_members(self) -> None:
+        if not self.current_team_id:
+            return
+        members = list_team_members(self.db_path, self.current_team_id)
+        choices = [f"{m['id']} {m['name']}" for m in members]
+        self.member_select["values"] = choices
+        if choices:
+            self.member_select.current(0)
+
     def _selected_phase_id(self) -> int | None:
         selection = self.roadmap_tree.selection()
         if not selection:
@@ -210,3 +295,10 @@ class StudentDashboard(tk.Frame):
             if parent.startswith("phase-"):
                 return int(parent.split("-", 1)[1])
         return None
+
+    def _selected_task_id(self) -> int | None:
+        selection = self.task_list.curselection()
+        if not selection:
+            return None
+        entry = self.task_list.get(selection[0])
+        return int(entry.split(" ", 1)[0])
