@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS teams (
 CREATE TABLE IF NOT EXISTS team_members (
     team_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
+    role TEXT NOT NULL DEFAULT 'Member',
     PRIMARY KEY(team_id, user_id),
     FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -80,6 +81,16 @@ CREATE TABLE IF NOT EXISTS roadmap_comments (
     kind TEXT NOT NULL,
     FOREIGN KEY(roadmap_id) REFERENCES roadmaps(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS team_invitations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 """
 
 
@@ -87,3 +98,12 @@ def init_db(db_path: str) -> None:
     db = DBConnector(db_path)
     with db.transaction() as conn:
         conn.executescript(SCHEMA_SQL)
+        _ensure_team_member_role(conn)
+
+
+def _ensure_team_member_role(conn) -> None:
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(team_members)")}
+    if "role" not in cols:
+        conn.execute(
+            "ALTER TABLE team_members ADD COLUMN role TEXT NOT NULL DEFAULT 'Member'"
+        )

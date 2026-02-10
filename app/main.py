@@ -60,6 +60,7 @@ class App(tk.Tk):
         self._clear_frames()
         frame = StudentDashboard(
             self.container,
+            self.services.class_service,
             self.services.team_service,
             self.services.roadmap_service,
             self.services.task_service,

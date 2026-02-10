@@ -3,12 +3,21 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from app.services.class import ClassService
+from app.services.classes import ClassService
 from app.services.roadmap import RoadmapService
 from app.services.task import TaskService
 from app.services.team import TeamService
 from app.ui.charts import show_charts_window
-from app.ui.components import AppShell, DataTable, DetailsDrawer, Modal, Section, StatCard
+from app.ui.components import AppShell, Modal, bind_modal_keys
+from app.ui.teacher import (
+    ClassSetupSection,
+    RoadmapReviewSection,
+    StudentRosterSection,
+    TeacherDrawer,
+    TeacherStatsRow,
+    TeamSection,
+)
+from app.ui.forms import ApprovalNoteForm, CommentForm, StudentForm
 
 
 class TeacherDashboard(tk.Frame):
@@ -41,167 +50,76 @@ class TeacherDashboard(tk.Frame):
 
     def _build_layout(self) -> None:
         content = self.shell.content
-        content.grid_rowconfigure(1, weight=0)
+        content.grid_rowconfigure(1, weight=1)
         content.grid_rowconfigure(2, weight=1)
-        content.grid_rowconfigure(3, weight=1)
         content.grid_columnconfigure(0, weight=1)
-        content.grid_columnconfigure(1, weight=1)
+        content.grid_columnconfigure(1, weight=2)
         content.grid_columnconfigure(2, weight=0, minsize=260)
 
-        self.stats_row = tk.Frame(content)
+        self.stats_row = TeacherStatsRow(content)
         self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
-        self.stats_row.grid_columnconfigure((0, 1, 2), weight=1)
 
-        self.stat_students = StatCard(self.stats_row, "Students", "0")
-        self.stat_students.grid(row=0, column=0, padx=8, sticky="ew")
-        self.stat_teams = StatCard(self.stats_row, "Teams", "0")
-        self.stat_teams.grid(row=0, column=1, padx=8, sticky="ew")
-        self.stat_roadmaps = StatCard(self.stats_row, "Roadmaps", "0")
-        self.stat_roadmaps.grid(row=0, column=2, padx=8, sticky="ew")
+        self.class_section = ClassSetupSection(content, self._create_class)
+        self.class_section.grid(row=1, column=0, sticky="new", padx=8, pady=8)
 
-        self.class_section = Section(content, "Class Setup")
-        self.class_section.grid(row=1, column=0, sticky="ew", padx=8, pady=8)
-        self._build_class_panel(self.class_section.body)
-
-        self.student_section = Section(content, "Student Roster")
+        self.student_section = StudentRosterSection(
+            content, self._add_student, self._edit_student, self._delete_student, self._show_student_details
+        )
         self.student_section.grid(row=2, column=0, sticky="nsew", padx=8, pady=8)
-        self._build_student_panel(self.student_section.body)
 
-        self.team_section = Section(content, "Teams")
-        self.team_section.grid(row=1, column=1, rowspan=2, sticky="nsew", padx=8, pady=8)
-        self._build_team_panel(self.team_section.body)
+        tabs = ttk.Notebook(content)
+        tabs.grid(row=1, column=1, rowspan=2, sticky="nsew", padx=8, pady=8)
 
-        self.roadmap_section = Section(content, "Roadmap Review")
-        self.roadmap_section.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
-        self._build_roadmap_panel(self.roadmap_section.body)
+        self.team_section = TeamSection(
+            tabs,
+            self._create_team,
+            self._add_team_member,
+            self._send_invite,
+            self._set_principal,
+            self._set_member_role,
+            self._edit_team,
+            self._delete_team,
+            self._refresh_team_members,
+        )
+        tabs.add(self.team_section, text="Teams")
 
-        self.drawer = DetailsDrawer(content, "Details")
-        self.drawer.grid(row=1, column=2, rowspan=3, sticky="nsew", padx=8, pady=8)
+        self.roadmap_section = RoadmapReviewSection(
+            tabs, self._add_comment, self._approve_roadmap, self._refresh_comments
+        )
+        tabs.add(self.roadmap_section, text="Roadmaps")
+
+        self.drawer = TeacherDrawer(content)
+        self.drawer.grid(row=1, column=2, rowspan=2, sticky="nsew", padx=8, pady=8)
 
         tk.Button(self.shell.topbar.actions, text="View Charts", command=self._show_charts).pack(
             side="left", padx=6
         )
 
-    def _build_class_panel(self, parent: tk.Frame) -> None:
-        tk.Label(parent, text="Class Name").grid(row=0, column=0, sticky="w", pady=4)
-        tk.Label(parent, text="Term").grid(row=0, column=2, sticky="w", pady=4)
-
-        self.class_name_entry = tk.Entry(parent, width=28)
-        self.class_term_entry = tk.Entry(parent, width=18)
-        self.class_name_entry.grid(row=1, column=0, padx=4, pady=4)
-        self.class_term_entry.grid(row=1, column=2, padx=4, pady=4)
-
-        tk.Button(parent, text="Create Class", command=self._create_class).grid(
-            row=1, column=3, padx=6, pady=4
-        )
-
-        self.class_status = tk.Label(parent, text="No class selected")
-        self.class_status.grid(row=2, column=0, columnspan=4, sticky="w")
-
-    def _build_student_panel(self, parent: tk.Frame) -> None:
-        form = tk.Frame(parent)
-        form.pack(fill="x", pady=6)
-
-        tk.Label(form, text="Name").grid(row=0, column=0, sticky="w")
-        tk.Label(form, text="Email").grid(row=0, column=2, sticky="w")
-
-        self.student_name_entry = tk.Entry(form, width=22)
-        self.student_email_entry = tk.Entry(form, width=28)
-        self.student_name_entry.grid(row=1, column=0, padx=4, pady=4)
-        self.student_email_entry.grid(row=1, column=2, padx=4, pady=4)
-
-        tk.Button(form, text="Add Student", command=self._add_student).grid(
-            row=1, column=3, padx=6, pady=4
-        )
-
-        toolbar = tk.Frame(parent)
-        toolbar.pack(fill="x", pady=6)
-        tk.Button(toolbar, text="Edit", command=self._edit_student).pack(side="left", padx=4)
-        tk.Button(toolbar, text="Delete", command=self._delete_student).pack(side="left", padx=4)
-
-        self.student_table = DataTable(parent, ["Id", "Name", "Email"], height=6)
-        self.student_table.pack(fill="both", expand=True, pady=6)
-        self.student_table.bind("<<TreeviewSelect>>", lambda _e: self._show_student_details())
-
-    def _build_team_panel(self, parent: tk.Frame) -> None:
-        form = tk.Frame(parent)
-        form.pack(fill="x", pady=6)
-
-        tk.Label(form, text="Team Name").grid(row=0, column=0, sticky="w")
-        self.team_name_entry = tk.Entry(form, width=22)
-        self.team_name_entry.grid(row=1, column=0, padx=4, pady=4)
-        tk.Button(form, text="Create Team", command=self._create_team).grid(
-            row=1, column=1, padx=6
-        )
-
-        tables = tk.Frame(parent)
-        tables.pack(fill="both", expand=True)
-        tables.grid_columnconfigure(0, weight=1)
-        tables.grid_columnconfigure(1, weight=1)
-
-        self.team_table = DataTable(tables, ["Id", "Team", "Principal"], height=6)
-        self.team_table.grid(row=0, column=0, sticky="nsew", padx=4, pady=6)
-        self.team_table.bind("<<TreeviewSelect>>", lambda _e: self._refresh_team_members())
-
-        self.team_member_table = DataTable(tables, ["Id", "Member", "Email"], height=6)
-        self.team_member_table.grid(row=0, column=1, sticky="nsew", padx=4, pady=6)
-
-        actions = tk.Frame(parent)
-        actions.pack(fill="x", pady=6)
-
-        self.member_select = ttk.Combobox(actions, state="readonly")
-        self.member_select.pack(side="left", padx=4)
-        tk.Button(actions, text="Add Member", command=self._add_team_member).pack(
-            side="left", padx=4
-        )
-
-        self.principal_select = ttk.Combobox(actions, state="readonly")
-        self.principal_select.pack(side="left", padx=4)
-        tk.Button(actions, text="Set Principal", command=self._set_principal).pack(
-            side="left", padx=4
-        )
-
-        tk.Button(actions, text="Edit Team", command=self._edit_team).pack(side="left", padx=4)
-        tk.Button(actions, text="Delete Team", command=self._delete_team).pack(side="left", padx=4)
-
-    def _build_roadmap_panel(self, parent: tk.Frame) -> None:
-        self.roadmap_table = DataTable(parent, ["Id", "Team", "Status"], height=6)
-        self.roadmap_table.pack(fill="both", expand=True, pady=6)
-        self.roadmap_table.bind("<<TreeviewSelect>>", lambda _e: self._refresh_comments())
-
-        actions = tk.Frame(parent)
-        actions.pack(fill="x", pady=4)
-        tk.Button(actions, text="Add Comment", command=self._add_comment).pack(
-            side="left", padx=4
-        )
-        tk.Button(actions, text="Approve Selected", command=self._approve_roadmap).pack(
-            side="right", padx=4
-        )
-
-        self.comment_table = DataTable(parent, ["Author", "Comment", "Time"], height=4)
-        self.comment_table.pack(fill="both", expand=True, pady=6)
-
     def _create_class(self) -> None:
-        name = self.class_name_entry.get().strip()
-        term = self.class_term_entry.get().strip()
+        errors = self.class_section.errors()
+        if errors:
+            messagebox.showwarning("Invalid data", "\n".join(errors))
+            return
+        name = self.class_section.get_name()
+        term = self.class_section.get_term()
         if not name or not term:
             messagebox.showwarning("Missing data", "Enter a class name and term.")
             return
         self.class_id = self.class_service.create_class(name, term)
-        self.class_status.config(text=f"Active class: {name} ({term})")
+        self.class_section.set_status(f"Active class: {name} ({term})")
         self._refresh_teams()
         self._refresh_roadmaps()
         self._refresh_stats()
 
     def _add_student(self) -> None:
-        name = self.student_name_entry.get().strip()
-        email = self.student_email_entry.get().strip()
-        if not name or not email:
-            messagebox.showwarning("Missing data", "Enter student name and email.")
+        errors = self.student_section.errors()
+        if errors:
+            messagebox.showwarning("Invalid data", "\n".join(errors))
             return
+        name = self.student_section.get_name()
+        email = self.student_section.get_email()
         self.class_service.create_user(name, email, "student")
-        self.student_name_entry.delete(0, tk.END)
-        self.student_email_entry.delete(0, tk.END)
+        self.student_section.clear_form()
         self._refresh_students()
         self._refresh_stats()
 
@@ -209,12 +127,12 @@ class TeacherDashboard(tk.Frame):
         if not self.class_id:
             messagebox.showwarning("No class", "Create a class first.")
             return
-        name = self.team_name_entry.get().strip()
+        name = self.team_section.get_team_name()
         if not name:
             messagebox.showwarning("Missing data", "Enter a team name.")
             return
         self.team_service.create_team(self.class_id, name, None)
-        self.team_name_entry.delete(0, tk.END)
+        self.team_section.clear_team_name()
         self._refresh_teams()
         self._refresh_roadmaps()
         self._refresh_stats()
@@ -224,7 +142,7 @@ class TeacherDashboard(tk.Frame):
         if not team_id:
             messagebox.showwarning("No team", "Select a team first.")
             return
-        selection = self.member_select.get()
+        selection = self.team_section.selected_member_label()
         if not selection:
             messagebox.showwarning("No student", "Select a student to add.")
             return
@@ -232,12 +150,25 @@ class TeacherDashboard(tk.Frame):
         self.team_service.add_team_member(team_id, user_id)
         self._refresh_team_members()
 
+    def _send_invite(self) -> None:
+        team_id = self._selected_team_id()
+        if not team_id:
+            messagebox.showwarning("No team", "Select a team first.")
+            return
+        selection = self.team_section.selected_member_label()
+        if not selection:
+            messagebox.showwarning("No student", "Select a student to invite.")
+            return
+        user_id = int(selection.split(" ", 1)[0])
+        self.team_service.create_invitation(team_id, user_id)
+        self._refresh_team_invitations()
+
     def _set_principal(self) -> None:
         team_id = self._selected_team_id()
         if not team_id:
             messagebox.showwarning("No team", "Select a team first.")
             return
-        selection = self.principal_select.get()
+        selection = self.team_section.selected_principal_label()
         if not selection:
             messagebox.showwarning("No student", "Select a principal student.")
             return
@@ -245,19 +176,34 @@ class TeacherDashboard(tk.Frame):
         self.team_service.update_team_principal(team_id, user_id)
         self._refresh_teams()
 
+    def _set_member_role(self) -> None:
+        team_id = self._selected_team_id()
+        if not team_id:
+            messagebox.showwarning("No team", "Select a team first.")
+            return
+        user_id = self.team_section.selected_member_id()
+        if not user_id:
+            messagebox.showwarning("No member", "Select a team member.")
+            return
+        role = self.team_section.selected_role()
+        if not role:
+            messagebox.showwarning("No role", "Select a role.")
+            return
+        self.team_service.set_member_role(team_id, user_id, role)
+        self._refresh_team_members()
+
     def _approve_roadmap(self) -> None:
-        item = self.roadmap_table.selection()
+        item = self.roadmap_section.roadmap_table.selection()
         if not item:
             messagebox.showwarning("No roadmap", "Select a roadmap to approve.")
             return
-        roadmap_id = int(self.roadmap_table.item(item[0], "values")[0])
+        roadmap_id = int(self.roadmap_section.roadmap_table.item(item[0], "values")[0])
         modal = Modal(self, "Approval Note")
-        tk.Label(modal.body, text="Comment (optional)").pack(anchor="w")
-        note = tk.Text(modal.body, height=4, width=40)
-        note.pack(fill="x", pady=6)
+        form = ApprovalNoteForm()
+        form.render(modal.body)
 
         def save() -> None:
-            text = note.get("1.0", tk.END).strip()
+            text = form.get_data()["text"]
             if text:
                 self.roadmap_service.add_roadmap_comment(
                     roadmap_id, "Teacher", text, "approval"
@@ -268,8 +214,7 @@ class TeacherDashboard(tk.Frame):
             self._refresh_comments()
             self._refresh_stats()
 
-        modal.bind("<Escape>", lambda _e: modal.destroy())
-        modal.bind("<Return>", lambda _e: save())
+        bind_modal_keys(modal, save)
         tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
@@ -283,21 +228,20 @@ class TeacherDashboard(tk.Frame):
             messagebox.showwarning("No roadmap", "Select a roadmap first.")
             return
         modal = Modal(self, "Add Comment")
-        tk.Label(modal.body, text="Comment").pack(anchor="w")
-        note = tk.Text(modal.body, height=4, width=40)
-        note.pack(fill="x", pady=6)
+        form = CommentForm()
+        form.render(modal.body)
 
         def save() -> None:
-            text = note.get("1.0", tk.END).strip()
-            if not text:
-                messagebox.showwarning("Missing data", "Enter a comment.")
+            errors = form.validate()
+            if errors:
+                messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
+            text = form.get_data()["text"]
             self.roadmap_service.add_roadmap_comment(roadmap_id, "Teacher", text, "comment")
             modal.destroy()
             self._refresh_comments()
 
-        modal.bind("<Escape>", lambda _e: modal.destroy())
-        modal.bind("<Return>", lambda _e: save())
+        bind_modal_keys(modal, save)
         tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
@@ -306,40 +250,53 @@ class TeacherDashboard(tk.Frame):
     def _refresh_students(self) -> None:
         students = self.class_service.list_users(role="student")
         rows = [(s["id"], s["name"], s["email"]) for s in students]
-        self.student_table.set_rows(rows)
+        self.student_section.set_rows(rows)
         choices = [f"{s['id']} {s['name']}" for s in students]
-        self.member_select["values"] = choices
-        self.principal_select["values"] = choices
+        self.team_section.set_student_choices(choices)
 
     def _refresh_teams(self) -> None:
         if not self.class_id:
-            self.team_table.set_rows([])
+            self.team_section.set_team_rows([])
             return
         self.teams_cache = self.team_service.list_teams(self.class_id)
         rows = []
         for team in self.teams_cache:
-            principal = team["principal_user_id"] or "-"
+            principal = team["principal_name"] or "-"
             rows.append((team["id"], team["name"], principal))
-        self.team_table.set_rows(rows)
+        self.team_section.set_team_rows(rows)
+        if rows:
+            first = self.team_section.team_table.get_children()[0]
+            self.team_section.team_table.selection_set(first)
+            self._refresh_team_members()
         self._show_team_details()
 
     def _refresh_team_members(self) -> None:
         team_id = self._selected_team_id()
         if not team_id:
-            self.team_member_table.set_rows([])
+            self.team_section.set_member_rows([])
             return
         members = self.team_service.list_team_members(team_id)
-        rows = [(m["id"], m["name"], m["email"]) for m in members]
-        self.team_member_table.set_rows(rows)
+        rows = [(m["id"], m["name"], m["email"], m["role"]) for m in members]
+        self.team_section.set_member_rows(rows)
         self._show_team_details()
+        self._refresh_team_invitations()
+
+    def _refresh_team_invitations(self) -> None:
+        team_id = self._selected_team_id()
+        if not team_id:
+            self.team_section.set_invite_rows([])
+            return
+        invites = self.team_service.list_invitations_for_team(team_id)
+        rows = [(i["id"], i["user"], i["status"]) for i in invites]
+        self.team_section.set_invite_rows(rows)
 
     def _refresh_roadmaps(self) -> None:
         if not self.class_id:
-            self.roadmap_table.set_rows([])
+            self.roadmap_section.set_roadmap_rows([])
             return
         roadmaps = self.roadmap_service.list_roadmaps_for_class(self.class_id)
-        rows = [(r["id"], r["team"], r["status"]) for r in roadmaps]
-        self.roadmap_table.set_rows(rows)
+        rows = [(r["id"], r["team"], r["principal"] or "-", r["status"]) for r in roadmaps]
+        self.roadmap_section.set_roadmap_rows(rows)
         self._refresh_comments()
 
     def _refresh_stats(self) -> None:
@@ -350,50 +307,65 @@ class TeacherDashboard(tk.Frame):
             if self.class_id
             else []
         )
-        self.stat_students.set_value(str(len(students)))
-        self.stat_teams.set_value(str(len(teams)))
-        self.stat_roadmaps.set_value(str(len(roadmaps)))
+        self.stats_row.set_counts(len(students), len(teams), len(roadmaps))
 
     def _show_charts(self) -> None:
         if not self.class_id:
             messagebox.showwarning("No class", "Create a class first.")
             return
         tasks = self.task_service.list_tasks_for_class(self.class_id)
-        show_charts_window(self, "Class Charts", tasks)
+        title = "Class Charts"
+        team_id = self._selected_team_id()
+        if team_id:
+            team = self.team_service.get_team(team_id)
+            principal = team.get("principal_name") if team else None
+            if principal:
+                title = f"{title} · Selected Team Principal: {principal}"
+        show_charts_window(self, title, tasks)
 
     def _selected_team_id(self) -> int | None:
-        selection = self.team_table.selection()
-        if not selection:
-            return None
-        return int(self.team_table.item(selection[0], "values")[0])
+        return self.team_section.selected_team_id()
 
     def _selected_roadmap_id(self) -> int | None:
-        selection = self.roadmap_table.selection()
-        if not selection:
-            return None
-        return int(self.roadmap_table.item(selection[0], "values")[0])
+        return self.roadmap_section.selected_roadmap_id()
 
     def _refresh_comments(self) -> None:
         roadmap_id = self._selected_roadmap_id()
         if not roadmap_id:
-            self.comment_table.set_rows([])
+            self.roadmap_section.set_comment_rows([])
             return
+        self._show_roadmap_details()
         comments = self.roadmap_service.list_roadmap_comments(roadmap_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
-        self.comment_table.set_rows(rows)
+        self.roadmap_section.set_comment_rows(rows)
+
+    def _show_roadmap_details(self) -> None:
+        selection = self.roadmap_section.roadmap_table.selection()
+        if not selection:
+            return
+        row = self.roadmap_section.roadmap_table.item(selection[0], "values")
+        self.drawer.clear()
+        team_id = self._selected_team_id()
+        if team_id:
+            self._render_team_header()
+        roadmap_id, team_name, principal, status = row
+        tk.Label(self.drawer.body, text=f"Roadmap #{roadmap_id}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Team: {team_name}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Principal: {principal}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Status: {status}").pack(anchor="w")
 
     def _selected_student_id(self) -> int | None:
-        selection = self.student_table.selection()
-        if not selection:
-            return None
-        return int(self.student_table.item(selection[0], "values")[0])
+        return self.student_section.selected_id()
 
     def _show_student_details(self) -> None:
         student_id = self._selected_student_id()
         if not student_id:
             return
-        row = self.student_table.item(self.student_table.selection()[0], "values")
+        row = self.student_section.selected_row()
+        if not row:
+            return
         self.drawer.clear()
+        self._render_team_header()
         tk.Label(self.drawer.body, text=f"Student #{row[0]}").pack(anchor="w")
         tk.Label(self.drawer.body, text=f"Name: {row[1]}").pack(anchor="w")
         tk.Label(self.drawer.body, text=f"Email: {row[2]}").pack(anchor="w")
@@ -408,11 +380,11 @@ class TeacherDashboard(tk.Frame):
         team_id = self._selected_team_id()
         if not team_id:
             return
-        row = self.team_table.item(self.team_table.selection()[0], "values")
+        row = self.team_section.selected_team_row()
+        if not row:
+            return
         self.drawer.clear()
-        tk.Label(self.drawer.body, text=f"Team #{row[0]}").pack(anchor="w")
-        tk.Label(self.drawer.body, text=f"Name: {row[1]}").pack(anchor="w")
-        tk.Label(self.drawer.body, text=f"Principal: {row[2]}").pack(anchor="w")
+        self._render_team_header(row)
         tk.Button(self.drawer.actions, text="Edit", command=self._edit_team).pack(
             side="left", padx=4
         )
@@ -420,35 +392,47 @@ class TeacherDashboard(tk.Frame):
             side="left", padx=4
         )
 
+    def _render_team_header(self, team_row: tuple | None = None) -> None:
+        if team_row:
+            team_id, team_name, principal = team_row
+        else:
+            team_id = self._selected_team_id()
+            if not team_id:
+                return
+            team = self.team_service.get_team(team_id)
+            if not team:
+                return
+            team_name = team["name"]
+            principal = team.get("principal_name") or "-"
+        self.drawer.render_team_header(team_id, team_name, principal)
+
     def _edit_student(self) -> None:
         student_id = self._selected_student_id()
         if not student_id:
             messagebox.showwarning("No student", "Select a student first.")
             return
-        row = self.student_table.item(self.student_table.selection()[0], "values")
+        row = self.student_section.selected_row()
+        if not row:
+            return
         modal = Modal(self, "Edit Student")
-        tk.Label(modal.body, text="Name").grid(row=0, column=0, sticky="w")
-        tk.Label(modal.body, text="Email").grid(row=1, column=0, sticky="w")
-        name_entry = tk.Entry(modal.body, width=24)
-        email_entry = tk.Entry(modal.body, width=28)
-        name_entry.grid(row=0, column=1, padx=6, pady=4)
-        email_entry.grid(row=1, column=1, padx=6, pady=4)
-        name_entry.insert(0, row[1])
-        email_entry.insert(0, row[2])
+        form = StudentForm()
+        form.render(modal.body)
+        form.set_data({"name": row[1], "email": row[2]})
 
         def save() -> None:
-            name = name_entry.get().strip()
-            email = email_entry.get().strip()
-            if not name or not email:
-                messagebox.showwarning("Missing data", "Enter a name and email.")
+            errors = form.validate()
+            if errors:
+                messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
+            data = form.get_data()
+            name = data["name"]
+            email = data["email"]
             self.class_service.update_user(student_id, name, email)
             modal.destroy()
             self._refresh_students()
             self._refresh_stats()
 
-        modal.bind("<Escape>", lambda _e: modal.destroy())
-        modal.bind("<Return>", lambda _e: save())
+        bind_modal_keys(modal, save)
         tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
@@ -471,7 +455,9 @@ class TeacherDashboard(tk.Frame):
         if not team_id:
             messagebox.showwarning("No team", "Select a team first.")
             return
-        row = self.team_table.item(self.team_table.selection()[0], "values")
+        row = self.team_section.selected_team_row()
+        if not row:
+            return
         modal = Modal(self, "Edit Team")
         tk.Label(modal.body, text="Team Name").grid(row=0, column=0, sticky="w")
         name_entry = tk.Entry(modal.body, width=24)
@@ -487,8 +473,7 @@ class TeacherDashboard(tk.Frame):
             modal.destroy()
             self._refresh_teams()
 
-        modal.bind("<Escape>", lambda _e: modal.destroy())
-        modal.bind("<Return>", lambda _e: save())
+        bind_modal_keys(modal, save)
         tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )

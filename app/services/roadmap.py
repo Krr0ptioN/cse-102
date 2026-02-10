@@ -58,16 +58,18 @@ class RoadmapService(Service):
         with self.db.connect() as conn:
             cur = conn.execute(
                 """
-                SELECT roadmaps.id, teams.name, roadmaps.status
+                SELECT roadmaps.id, teams.name, roadmaps.status, users.name
                 FROM roadmaps
                 JOIN teams ON teams.id = roadmaps.team_id
+                LEFT JOIN users ON users.id = teams.principal_user_id
                 WHERE teams.class_id = ?
                 ORDER BY roadmaps.id
                 """,
                 (class_id,),
             )
             return [
-                {"id": row[0], "team": row[1], "status": row[2]} for row in cur.fetchall()
+                {"id": row[0], "team": row[1], "status": row[2], "principal": row[3]}
+                for row in cur.fetchall()
             ]
 
     def add_roadmap_comment(

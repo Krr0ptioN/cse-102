@@ -1,6 +1,6 @@
 from app.db.schema import init_db
 from app.db.connector import DBConnector
-from app.services.class import ClassService
+from app.services.classes import ClassService
 
 
 def test_create_class_and_user(tmp_path):

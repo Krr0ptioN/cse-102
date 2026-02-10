@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.db.connector import DBConnector
-from app.services.class import ClassService
+from app.services.classes import ClassService
 from app.services.roadmap import RoadmapService
 from app.services.task import TaskService
 from app.services.team import TeamService

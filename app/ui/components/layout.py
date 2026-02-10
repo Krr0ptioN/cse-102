@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+import tkinter as tk
+
+from app.ui.theme import palette
+
+
+class AppShell(tk.Frame):
+    def __init__(self, master, title: str, on_back) -> None:
+        colors = palette()
+        super().__init__(master, bg=colors["bg"])
+        self.on_back = on_back
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        self.sidebar = Sidebar(self, on_back)
+        self.sidebar.grid(row=0, column=0, sticky="nsw")
+
+        self.main = tk.Frame(self, bg=colors["bg"])
+        self.main.grid(row=0, column=1, sticky="nsew")
+        self.main.grid_rowconfigure(1, weight=1)
+        self.main.grid_columnconfigure(0, weight=1)
+
+        self.topbar = Topbar(self.main, title)
+        self.topbar.grid(row=0, column=0, sticky="ew")
+
+        self.content = tk.Frame(self.main, bg=colors["bg"])
+        self.content.grid(row=1, column=0, sticky="nsew")
+        self.content.grid_columnconfigure(0, weight=1)
+        self.content.grid_columnconfigure(1, weight=1)
+
+
+class Sidebar(tk.Frame):
+    def __init__(self, master, on_back) -> None:
+        colors = palette()
+        super().__init__(master, width=220, bg=colors["sidebar"])
+        self.pack_propagate(False)
+
+        tk.Label(
+            self,
+            text="Lifecycle",
+            font=("Segoe UI", 16, "bold"),
+            bg=colors["sidebar"],
+            fg=colors["text"],
+        ).pack(anchor="w", padx=16, pady=(16, 6))
+        tk.Label(
+            self,
+            text="Project Manager",
+            font=("Segoe UI", 9),
+            bg=colors["sidebar"],
+            fg=colors["muted"],
+        ).pack(anchor="w", padx=16, pady=(0, 16))
+
+        self.nav = tk.Frame(self, bg=colors["sidebar"])
+        self.nav.pack(fill="x", padx=10)
+
+        for label in ("Dashboard", "Roadmaps", "Teams", "Reports"):
+            btn = tk.Button(self.nav, text=label, anchor="w", bg=colors["panel"])
+            btn.pack(fill="x", pady=4)
+
+        tk.Button(self, text="Back", command=on_back).pack(
+            side="bottom", fill="x", padx=10, pady=12
+        )
+
+
+class Topbar(tk.Frame):
+    def __init__(self, master, title: str) -> None:
+        colors = palette()
+        super().__init__(master, bg=colors["panel"])
+        tk.Label(
+            self, text=title, font=("Georgia", 18, "bold"), bg=colors["panel"]
+        ).pack(side="left", padx=12, pady=12)
+        self.actions = tk.Frame(self, bg=colors["panel"])
+        self.actions.pack(side="right", padx=12)
+
+
+class Section(tk.Frame):
+    def __init__(self, master, title: str) -> None:
+        colors = palette()
+        super().__init__(
+            master,
+            bg=colors["panel"],
+            highlightbackground=colors["border"],
+            highlightthickness=1,
+        )
+        header = tk.Frame(self, bg=colors["panel"])
+        header.pack(fill="x", padx=12, pady=(10, 4))
+        tk.Label(
+            header, text=title, font=("Segoe UI", 11, "bold"), bg=colors["panel"]
+        ).pack(side="left")
+        self.body = tk.Frame(self, bg=colors["panel"])
+        self.body.pack(fill="both", expand=True, padx=12, pady=(0, 12))
