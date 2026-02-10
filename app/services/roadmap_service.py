@@ -81,3 +81,23 @@ def _set_status(db_path: str, roadmap_id: int, status: str) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def list_roadmaps_for_class(db_path: str, class_id: int) -> list[dict]:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            """
+            SELECT roadmaps.id, teams.name, roadmaps.status
+            FROM roadmaps
+            JOIN teams ON teams.id = roadmaps.team_id
+            WHERE teams.class_id = ?
+            ORDER BY roadmaps.id
+            """,
+            (class_id,),
+        )
+        return [
+            {"id": row[0], "team": row[1], "status": row[2]} for row in cur.fetchall()
+        ]
+    finally:
+        conn.close()
