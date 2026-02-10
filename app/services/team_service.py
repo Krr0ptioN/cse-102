@@ -74,3 +74,22 @@ def list_team_members(db_path: str, team_id: int) -> list[dict]:
         ]
     finally:
         conn.close()
+
+
+def list_all_teams(db_path: str) -> list[dict]:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            "SELECT id, name, class_id, principal_user_id FROM teams ORDER BY name"
+        )
+        return [
+            {
+                "id": row[0],
+                "name": row[1],
+                "class_id": row[2],
+                "principal_user_id": row[3],
+            }
+            for row in cur.fetchall()
+        ]
+    finally:
+        conn.close()
