@@ -76,6 +76,24 @@ def list_team_members(db_path: str, team_id: int) -> list[dict]:
         conn.close()
 
 
+def update_team(db_path: str, team_id: int, name: str) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute("UPDATE teams SET name = ? WHERE id = ?", (name, team_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_team(db_path: str, team_id: int) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute("DELETE FROM teams WHERE id = ?", (team_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def list_all_teams(db_path: str) -> list[dict]:
     conn = get_connection(db_path)
     try:

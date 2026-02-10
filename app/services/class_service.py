@@ -48,3 +48,24 @@ def list_users(db_path: str, role: str | None = None) -> list[dict]:
         ]
     finally:
         conn.close()
+
+
+def update_user(db_path: str, user_id: int, name: str, email: str) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "UPDATE users SET name = ?, email = ? WHERE id = ?",
+            (name, email, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_user(db_path: str, user_id: int) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()

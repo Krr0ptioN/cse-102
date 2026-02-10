@@ -20,7 +20,7 @@ from app.services.task_service import (
 from app.services.team_service import list_all_teams, list_team_members
 from app.services.validation import validate_roadmap
 from app.ui.charts import show_charts_window
-from app.ui.components import AppShell, DataTable, Section, StatCard
+from app.ui.components import AppShell, DataTable, DetailsDrawer, Section, StatCard
 
 
 class StudentDashboard(tk.Frame):
@@ -43,6 +43,7 @@ class StudentDashboard(tk.Frame):
         content.grid_rowconfigure(1, weight=1)
         content.grid_columnconfigure(0, weight=1)
         content.grid_columnconfigure(1, weight=1)
+        content.grid_columnconfigure(2, weight=0, minsize=260)
 
         self.stats_row = tk.Frame(content)
         self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
@@ -60,6 +61,9 @@ class StudentDashboard(tk.Frame):
         self.task_section = Section(content, "Tasks")
         self.task_section.grid(row=1, column=1, sticky="nsew", padx=8, pady=8)
         self._build_task_panel(self.task_section.body)
+
+        self.drawer = DetailsDrawer(content, "Details")
+        self.drawer.grid(row=1, column=2, sticky="nsew", padx=8, pady=8)
 
     def _build_roadmap_panel(self, parent: tk.Frame) -> None:
         selector = tk.Frame(parent)
@@ -287,6 +291,7 @@ class StudentDashboard(tk.Frame):
         updates = list_updates_for_task(self.db_path, task_id)
         rows = [(u["user"], u["text"], u["created_at"]) for u in updates]
         self.update_table.set_rows(rows)
+        self._show_task_details(task_id, updates)
 
     def _refresh_team_members(self) -> None:
         if not self.current_team_id:
@@ -321,6 +326,30 @@ class StudentDashboard(tk.Frame):
         if not selection:
             return None
         return int(self.task_table.item(selection[0], "values")[0])
+
+    def _show_task_details(self, task_id: int, updates: list[dict]) -> None:
+        row = None
+        for task in getattr(self, "tasks_cache", []):
+            if task["id"] == task_id:
+                row = task
+                break
+        if not row:
+            return
+        self.drawer.clear()
+        tk.Label(self.drawer.body, text=f"Task #{row['id']}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Title: {row['title']}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Status: {row['status']}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Weight: {row['weight']}").pack(anchor="w")
+        tk.Label(
+            self.drawer.body, text="Recent Updates", font=("Segoe UI", 10, "bold")
+        ).pack(anchor="w", pady=(10, 4))
+        if not updates:
+            tk.Label(self.drawer.body, text="No updates yet").pack(anchor="w")
+            return
+        for upd in updates[:5]:
+            tk.Label(
+                self.drawer.body, text=f"- {upd['user']}: {upd['text']}"
+            ).pack(anchor="w")
 
     def _show_charts(self) -> None:
         if not self.current_roadmap_id:

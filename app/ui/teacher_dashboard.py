@@ -3,18 +3,26 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from app.services.class_service import create_class, create_user, list_users
+from app.services.class_service import (
+    create_class,
+    create_user,
+    delete_user,
+    list_users,
+    update_user,
+)
 from app.services.roadmap_service import approve_roadmap, list_roadmaps_for_class
 from app.services.task_service import list_tasks_for_class
 from app.services.team_service import (
     add_team_member,
     create_team,
+    delete_team,
     list_team_members,
     list_teams,
+    update_team,
     update_team_principal,
 )
 from app.ui.charts import show_charts_window
-from app.ui.components import AppShell, DataTable, Section, StatCard
+from app.ui.components import AppShell, DataTable, DetailsDrawer, Modal, Section, StatCard
 
 
 class TeacherDashboard(tk.Frame):
@@ -41,6 +49,7 @@ class TeacherDashboard(tk.Frame):
         content.grid_rowconfigure(3, weight=1)
         content.grid_columnconfigure(0, weight=1)
         content.grid_columnconfigure(1, weight=1)
+        content.grid_columnconfigure(2, weight=0, minsize=260)
 
         self.stats_row = tk.Frame(content)
         self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
@@ -68,6 +77,9 @@ class TeacherDashboard(tk.Frame):
         self.roadmap_section = Section(content, "Roadmap Review")
         self.roadmap_section.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
         self._build_roadmap_panel(self.roadmap_section.body)
+
+        self.drawer = DetailsDrawer(content, "Details")
+        self.drawer.grid(row=1, column=2, rowspan=3, sticky="nsew", padx=8, pady=8)
 
         tk.Button(self.shell.topbar.actions, text="View Charts", command=self._show_charts).pack(
             side="left", padx=6
@@ -105,8 +117,14 @@ class TeacherDashboard(tk.Frame):
             row=1, column=3, padx=6, pady=4
         )
 
+        toolbar = tk.Frame(parent)
+        toolbar.pack(fill="x", pady=6)
+        tk.Button(toolbar, text="Edit", command=self._edit_student).pack(side="left", padx=4)
+        tk.Button(toolbar, text="Delete", command=self._delete_student).pack(side="left", padx=4)
+
         self.student_table = DataTable(parent, ["Id", "Name", "Email"], height=6)
         self.student_table.pack(fill="both", expand=True, pady=6)
+        self.student_table.bind("<<TreeviewSelect>>", lambda _e: self._show_student_details())
 
     def _build_team_panel(self, parent: tk.Frame) -> None:
         form = tk.Frame(parent)
@@ -132,7 +150,7 @@ class TeacherDashboard(tk.Frame):
         self.team_member_table.grid(row=0, column=1, sticky="nsew", padx=4, pady=6)
 
         actions = tk.Frame(parent)
-        actions.pack(fill="x")
+        actions.pack(fill="x", pady=6)
 
         self.member_select = ttk.Combobox(actions, state="readonly")
         self.member_select.pack(side="left", padx=4)
@@ -145,6 +163,9 @@ class TeacherDashboard(tk.Frame):
         tk.Button(actions, text="Set Principal", command=self._set_principal).pack(
             side="left", padx=4
         )
+
+        tk.Button(actions, text="Edit Team", command=self._edit_team).pack(side="left", padx=4)
+        tk.Button(actions, text="Delete Team", command=self._delete_team).pack(side="left", padx=4)
 
     def _build_roadmap_panel(self, parent: tk.Frame) -> None:
         self.roadmap_table = DataTable(parent, ["Id", "Team", "Status"], height=6)
@@ -246,6 +267,7 @@ class TeacherDashboard(tk.Frame):
             principal = team["principal_user_id"] or "-"
             rows.append((team["id"], team["name"], principal))
         self.team_table.set_rows(rows)
+        self._show_team_details()
 
     def _refresh_team_members(self) -> None:
         team_id = self._selected_team_id()
@@ -255,6 +277,7 @@ class TeacherDashboard(tk.Frame):
         members = list_team_members(self.db_path, team_id)
         rows = [(m["id"], m["name"], m["email"]) for m in members]
         self.team_member_table.set_rows(rows)
+        self._show_team_details()
 
     def _refresh_roadmaps(self) -> None:
         if not self.class_id:
@@ -284,3 +307,124 @@ class TeacherDashboard(tk.Frame):
         if not selection:
             return None
         return int(self.team_table.item(selection[0], "values")[0])
+
+    def _selected_student_id(self) -> int | None:
+        selection = self.student_table.selection()
+        if not selection:
+            return None
+        return int(self.student_table.item(selection[0], "values")[0])
+
+    def _show_student_details(self) -> None:
+        student_id = self._selected_student_id()
+        if not student_id:
+            return
+        row = self.student_table.item(self.student_table.selection()[0], "values")
+        self.drawer.clear()
+        tk.Label(self.drawer.body, text=f"Student #{row[0]}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Name: {row[1]}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Email: {row[2]}").pack(anchor="w")
+        tk.Button(self.drawer.actions, text="Edit", command=self._edit_student).pack(
+            side="left", padx=4
+        )
+        tk.Button(self.drawer.actions, text="Delete", command=self._delete_student).pack(
+            side="left", padx=4
+        )
+
+    def _show_team_details(self) -> None:
+        team_id = self._selected_team_id()
+        if not team_id:
+            return
+        row = self.team_table.item(self.team_table.selection()[0], "values")
+        self.drawer.clear()
+        tk.Label(self.drawer.body, text=f"Team #{row[0]}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Name: {row[1]}").pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Principal: {row[2]}").pack(anchor="w")
+        tk.Button(self.drawer.actions, text="Edit", command=self._edit_team).pack(
+            side="left", padx=4
+        )
+        tk.Button(self.drawer.actions, text="Delete", command=self._delete_team).pack(
+            side="left", padx=4
+        )
+
+    def _edit_student(self) -> None:
+        student_id = self._selected_student_id()
+        if not student_id:
+            messagebox.showwarning("No student", "Select a student first.")
+            return
+        row = self.student_table.item(self.student_table.selection()[0], "values")
+        modal = Modal(self, "Edit Student")
+        tk.Label(modal.body, text="Name").grid(row=0, column=0, sticky="w")
+        tk.Label(modal.body, text="Email").grid(row=1, column=0, sticky="w")
+        name_entry = tk.Entry(modal.body, width=24)
+        email_entry = tk.Entry(modal.body, width=28)
+        name_entry.grid(row=0, column=1, padx=6, pady=4)
+        email_entry.grid(row=1, column=1, padx=6, pady=4)
+        name_entry.insert(0, row[1])
+        email_entry.insert(0, row[2])
+
+        def save() -> None:
+            name = name_entry.get().strip()
+            email = email_entry.get().strip()
+            if not name or not email:
+                messagebox.showwarning("Missing data", "Enter a name and email.")
+                return
+            update_user(self.db_path, student_id, name, email)
+            modal.destroy()
+            self._refresh_students()
+            self._refresh_stats()
+
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+
+    def _delete_student(self) -> None:
+        student_id = self._selected_student_id()
+        if not student_id:
+            messagebox.showwarning("No student", "Select a student first.")
+            return
+        if not messagebox.askyesno("Confirm", "Delete this student?"):
+            return
+        delete_user(self.db_path, student_id)
+        self._refresh_students()
+        self._refresh_team_members()
+        self._refresh_stats()
+
+    def _edit_team(self) -> None:
+        team_id = self._selected_team_id()
+        if not team_id:
+            messagebox.showwarning("No team", "Select a team first.")
+            return
+        row = self.team_table.item(self.team_table.selection()[0], "values")
+        modal = Modal(self, "Edit Team")
+        tk.Label(modal.body, text="Team Name").grid(row=0, column=0, sticky="w")
+        name_entry = tk.Entry(modal.body, width=24)
+        name_entry.grid(row=0, column=1, padx=6, pady=4)
+        name_entry.insert(0, row[1])
+
+        def save() -> None:
+            name = name_entry.get().strip()
+            if not name:
+                messagebox.showwarning("Missing data", "Enter a team name.")
+                return
+            update_team(self.db_path, team_id, name)
+            modal.destroy()
+            self._refresh_teams()
+
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+
+    def _delete_team(self) -> None:
+        team_id = self._selected_team_id()
+        if not team_id:
+            messagebox.showwarning("No team", "Select a team first.")
+            return
+        if not messagebox.askyesno("Confirm", "Delete this team?"):
+            return
+        delete_team(self.db_path, team_id)
+        self._refresh_teams()
+        self._refresh_team_members()
+        self._refresh_roadmaps()
+        self._refresh_stats()
