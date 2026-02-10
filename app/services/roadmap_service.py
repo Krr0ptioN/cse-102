@@ -180,3 +180,42 @@ def list_phases_with_tasks(db_path: str, roadmap_id: int) -> list[dict]:
         return phases
     finally:
         conn.close()
+
+
+def update_phase(db_path: str, phase_id: int, name: str) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute("UPDATE phases SET name = ? WHERE id = ?", (name, phase_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_phase(db_path: str, phase_id: int) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute("DELETE FROM phases WHERE id = ?", (phase_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def update_task_details(db_path: str, task_id: int, title: str, weight: int) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "UPDATE tasks SET title = ?, weight = ? WHERE id = ?",
+            (title, weight, task_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_task(db_path: str, task_id: int) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        conn.commit()
+    finally:
+        conn.close()

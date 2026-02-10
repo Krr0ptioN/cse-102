@@ -7,9 +7,13 @@ from app.services.roadmap_service import (
     create_phase,
     create_roadmap,
     create_task,
+    delete_phase,
+    delete_task,
     get_latest_roadmap,
     list_phases_with_tasks,
     submit_roadmap,
+    update_phase,
+    update_task_details,
 )
 from app.services.task_service import (
     add_update,
@@ -20,7 +24,7 @@ from app.services.task_service import (
 from app.services.team_service import list_all_teams, list_team_members
 from app.services.validation import validate_roadmap
 from app.ui.charts import show_charts_window
-from app.ui.components import AppShell, DataTable, DetailsDrawer, Section, StatCard
+from app.ui.components import AppShell, DataTable, DetailsDrawer, Modal, Section, StatCard
 
 
 class StudentDashboard(tk.Frame):
@@ -81,6 +85,12 @@ class StudentDashboard(tk.Frame):
         tk.Button(controls, text="Add Phase", command=self._add_phase).grid(
             row=0, column=1, padx=4
         )
+        tk.Button(controls, text="Edit Phase", command=self._edit_phase).grid(
+            row=0, column=2, padx=4
+        )
+        tk.Button(controls, text="Delete Phase", command=self._delete_phase).grid(
+            row=0, column=3, padx=4
+        )
 
         self.task_title_entry = tk.Entry(controls, width=20)
         self.task_title_entry.grid(row=1, column=0, padx=4)
@@ -88,6 +98,12 @@ class StudentDashboard(tk.Frame):
         self.task_weight_entry.grid(row=1, column=1, padx=4, sticky="w")
         tk.Button(controls, text="Add Task", command=self._add_task).grid(
             row=1, column=2, padx=4
+        )
+        tk.Button(controls, text="Edit Task", command=self._edit_task).grid(
+            row=1, column=3, padx=4
+        )
+        tk.Button(controls, text="Delete Task", command=self._delete_task).grid(
+            row=1, column=4, padx=4
         )
 
         action_row = tk.Frame(parent)
@@ -347,9 +363,97 @@ class StudentDashboard(tk.Frame):
             tk.Label(self.drawer.body, text="No updates yet").pack(anchor="w")
             return
         for upd in updates[:5]:
+            row = tk.Frame(self.drawer.body)
+            row.pack(fill="x", pady=2)
+            tk.Label(row, text="●", fg="#0f766e").pack(side="left")
             tk.Label(
-                self.drawer.body, text=f"- {upd['user']}: {upd['text']}"
-            ).pack(anchor="w")
+                row, text=f"{upd['user']}: {upd['text']}", wraplength=200, justify="left"
+            ).pack(side="left", padx=6)
+            tk.Label(row, text=upd["created_at"], fg="#5f6b68").pack(side="right")
+
+    def _edit_phase(self) -> None:
+        phase_id = self._selected_phase_id()
+        if not phase_id:
+            messagebox.showwarning("No phase", "Select a phase first.")
+            return
+        modal = Modal(self, "Edit Phase")
+        tk.Label(modal.body, text="Phase Name").grid(row=0, column=0, sticky="w")
+        name_entry = tk.Entry(modal.body, width=24)
+        name_entry.grid(row=0, column=1, padx=6, pady=4)
+        current = self.roadmap_tree.item(f"phase-{phase_id}", "text").replace("Phase: ", "")
+        name_entry.insert(0, current)
+
+        def save() -> None:
+            name = name_entry.get().strip()
+            if not name:
+                messagebox.showwarning("Missing data", "Enter a phase name.")
+                return
+            update_phase(self.db_path, phase_id, name)
+            modal.destroy()
+            self._refresh_roadmap_tree()
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+
+    def _delete_phase(self) -> None:
+        phase_id = self._selected_phase_id()
+        if not phase_id:
+            messagebox.showwarning("No phase", "Select a phase first.")
+            return
+        if not messagebox.askyesno("Confirm", "Delete this phase and its tasks?"):
+            return
+        delete_phase(self.db_path, phase_id)
+        self._refresh_roadmap_tree()
+        self._refresh_task_list()
+
+    def _edit_task(self) -> None:
+        task_id = self._selected_task_id()
+        if not task_id:
+            messagebox.showwarning("No task", "Select a task first.")
+            return
+        row = self.task_table.item(self.task_table.selection()[0], "values")
+        modal = Modal(self, "Edit Task")
+        tk.Label(modal.body, text="Title").grid(row=0, column=0, sticky="w")
+        tk.Label(modal.body, text="Weight").grid(row=1, column=0, sticky="w")
+        title_entry = tk.Entry(modal.body, width=24)
+        weight_entry = tk.Entry(modal.body, width=10)
+        title_entry.grid(row=0, column=1, padx=6, pady=4)
+        weight_entry.grid(row=1, column=1, padx=6, pady=4)
+        title_entry.insert(0, row[1])
+        weight_entry.insert(0, row[3])
+
+        def save() -> None:
+            title = title_entry.get().strip()
+            weight_text = weight_entry.get().strip()
+            if not title or not weight_text.isdigit():
+                messagebox.showwarning("Missing data", "Enter title and numeric weight.")
+                return
+            update_task_details(self.db_path, task_id, title, int(weight_text))
+            modal.destroy()
+            self._refresh_roadmap_tree()
+            self._refresh_task_list()
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+
+    def _delete_task(self) -> None:
+        task_id = self._selected_task_id()
+        if not task_id:
+            messagebox.showwarning("No task", "Select a task first.")
+            return
+        if not messagebox.askyesno("Confirm", "Delete this task?"):
+            return
+        delete_task(self.db_path, task_id)
+        self._refresh_roadmap_tree()
+        self._refresh_task_list()
 
     def _show_charts(self) -> None:
         if not self.current_roadmap_id:

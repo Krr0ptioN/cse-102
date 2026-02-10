@@ -373,6 +373,8 @@ class TeacherDashboard(tk.Frame):
             self._refresh_students()
             self._refresh_stats()
 
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
         tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
@@ -411,6 +413,8 @@ class TeacherDashboard(tk.Frame):
             modal.destroy()
             self._refresh_teams()
 
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
         tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
