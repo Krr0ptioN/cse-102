@@ -103,6 +103,48 @@ def list_roadmaps_for_class(db_path: str, class_id: int) -> list[dict]:
         conn.close()
 
 
+def add_roadmap_comment(
+    db_path: str, roadmap_id: int, author: str, text: str, kind: str = "comment"
+) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            """
+            INSERT INTO roadmap_comments(roadmap_id, author, text, created_at, kind)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (roadmap_id, author, text, datetime.utcnow().isoformat(), kind),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_roadmap_comments(db_path: str, roadmap_id: int) -> list[dict]:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            """
+            SELECT author, text, created_at, kind
+            FROM roadmap_comments
+            WHERE roadmap_id = ?
+            ORDER BY created_at DESC
+            """,
+            (roadmap_id,),
+        )
+        return [
+            {
+                "author": row[0],
+                "text": row[1],
+                "created_at": row[2],
+                "kind": row[3],
+            }
+            for row in cur.fetchall()
+        ]
+    finally:
+        conn.close()
+
+
 def get_latest_roadmap(db_path: str, team_id: int) -> dict | None:
     conn = get_connection(db_path)
     try:

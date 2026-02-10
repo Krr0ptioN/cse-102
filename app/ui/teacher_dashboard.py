@@ -10,7 +10,12 @@ from app.services.class_service import (
     list_users,
     update_user,
 )
-from app.services.roadmap_service import approve_roadmap, list_roadmaps_for_class
+from app.services.roadmap_service import (
+    add_roadmap_comment,
+    approve_roadmap,
+    list_roadmap_comments,
+    list_roadmaps_for_class,
+)
 from app.services.task_service import list_tasks_for_class
 from app.services.team_service import (
     add_team_member,
@@ -170,10 +175,19 @@ class TeacherDashboard(tk.Frame):
     def _build_roadmap_panel(self, parent: tk.Frame) -> None:
         self.roadmap_table = DataTable(parent, ["Id", "Team", "Status"], height=6)
         self.roadmap_table.pack(fill="both", expand=True, pady=6)
+        self.roadmap_table.bind("<<TreeviewSelect>>", lambda _e: self._refresh_comments())
 
-        tk.Button(parent, text="Approve Selected", command=self._approve_roadmap).pack(
-            anchor="e", pady=4
+        actions = tk.Frame(parent)
+        actions.pack(fill="x", pady=4)
+        tk.Button(actions, text="Add Comment", command=self._add_comment).pack(
+            side="left", padx=4
         )
+        tk.Button(actions, text="Approve Selected", command=self._approve_roadmap).pack(
+            side="right", padx=4
+        )
+
+        self.comment_table = DataTable(parent, ["Author", "Comment", "Time"], height=4)
+        self.comment_table.pack(fill="both", expand=True, pady=6)
 
     def _create_class(self) -> None:
         name = self.class_name_entry.get().strip()
@@ -245,9 +259,55 @@ class TeacherDashboard(tk.Frame):
             messagebox.showwarning("No roadmap", "Select a roadmap to approve.")
             return
         roadmap_id = int(self.roadmap_table.item(item[0], "values")[0])
-        approve_roadmap(self.db_path, roadmap_id)
-        self._refresh_roadmaps()
-        self._refresh_stats()
+        modal = Modal(self, "Approval Note")
+        tk.Label(modal.body, text="Comment (optional)").pack(anchor="w")
+        note = tk.Text(modal.body, height=4, width=40)
+        note.pack(fill="x", pady=6)
+
+        def save() -> None:
+            text = note.get("1.0", tk.END).strip()
+            if text:
+                add_roadmap_comment(self.db_path, roadmap_id, "Teacher", text, "approval")
+            approve_roadmap(self.db_path, roadmap_id)
+            modal.destroy()
+            self._refresh_roadmaps()
+            self._refresh_comments()
+            self._refresh_stats()
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Approve", command=save).pack(
+            side="right", padx=4
+        )
+
+    def _add_comment(self) -> None:
+        roadmap_id = self._selected_roadmap_id()
+        if not roadmap_id:
+            messagebox.showwarning("No roadmap", "Select a roadmap first.")
+            return
+        modal = Modal(self, "Add Comment")
+        tk.Label(modal.body, text="Comment").pack(anchor="w")
+        note = tk.Text(modal.body, height=4, width=40)
+        note.pack(fill="x", pady=6)
+
+        def save() -> None:
+            text = note.get("1.0", tk.END).strip()
+            if not text:
+                messagebox.showwarning("Missing data", "Enter a comment.")
+                return
+            add_roadmap_comment(self.db_path, roadmap_id, "Teacher", text, "comment")
+            modal.destroy()
+            self._refresh_comments()
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
 
     def _refresh_students(self) -> None:
         students = list_users(self.db_path, role="student")
@@ -286,6 +346,7 @@ class TeacherDashboard(tk.Frame):
         roadmaps = list_roadmaps_for_class(self.db_path, self.class_id)
         rows = [(r["id"], r["team"], r["status"]) for r in roadmaps]
         self.roadmap_table.set_rows(rows)
+        self._refresh_comments()
 
     def _refresh_stats(self) -> None:
         students = list_users(self.db_path, role="student")
@@ -307,6 +368,21 @@ class TeacherDashboard(tk.Frame):
         if not selection:
             return None
         return int(self.team_table.item(selection[0], "values")[0])
+
+    def _selected_roadmap_id(self) -> int | None:
+        selection = self.roadmap_table.selection()
+        if not selection:
+            return None
+        return int(self.roadmap_table.item(selection[0], "values")[0])
+
+    def _refresh_comments(self) -> None:
+        roadmap_id = self._selected_roadmap_id()
+        if not roadmap_id:
+            self.comment_table.set_rows([])
+            return
+        comments = list_roadmap_comments(self.db_path, roadmap_id)
+        rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
+        self.comment_table.set_rows(rows)
 
     def _selected_student_id(self) -> int | None:
         selection = self.student_table.selection()

@@ -70,6 +70,16 @@ CREATE TABLE IF NOT EXISTS updates (
     FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS roadmap_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    roadmap_id INTEGER NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    FOREIGN KEY(roadmap_id) REFERENCES roadmaps(id) ON DELETE CASCADE
+);
 """
 
 

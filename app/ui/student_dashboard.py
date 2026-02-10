@@ -10,8 +10,10 @@ from app.services.roadmap_service import (
     delete_phase,
     delete_task,
     get_latest_roadmap,
+    list_roadmap_comments,
     list_phases_with_tasks,
     submit_roadmap,
+    add_roadmap_comment,
     update_phase,
     update_task_details,
 )
@@ -45,6 +47,7 @@ class StudentDashboard(tk.Frame):
     def _build_layout(self) -> None:
         content = self.shell.content
         content.grid_rowconfigure(1, weight=1)
+        content.grid_rowconfigure(2, weight=1)
         content.grid_columnconfigure(0, weight=1)
         content.grid_columnconfigure(1, weight=1)
         content.grid_columnconfigure(2, weight=0, minsize=260)
@@ -65,6 +68,10 @@ class StudentDashboard(tk.Frame):
         self.task_section = Section(content, "Tasks")
         self.task_section.grid(row=1, column=1, sticky="nsew", padx=8, pady=8)
         self._build_task_panel(self.task_section.body)
+
+        self.comments_section = Section(content, "Roadmap Comments")
+        self.comments_section.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
+        self._build_comments_panel(self.comments_section.body)
 
         self.drawer = DetailsDrawer(content, "Details")
         self.drawer.grid(row=1, column=2, sticky="nsew", padx=8, pady=8)
@@ -147,6 +154,16 @@ class StudentDashboard(tk.Frame):
         self.update_table = DataTable(parent, ["User", "Update", "Time"], height=6)
         self.update_table.pack(fill="both", expand=True, pady=6)
 
+    def _build_comments_panel(self, parent: tk.Frame) -> None:
+        action = tk.Frame(parent)
+        action.pack(fill="x", pady=4)
+        tk.Button(action, text="Add Comment", command=self._add_comment).pack(
+            side="left", padx=4
+        )
+
+        self.comment_table = DataTable(parent, ["Author", "Comment", "Time"], height=5)
+        self.comment_table.pack(fill="both", expand=True, pady=6)
+
     def _refresh_teams(self) -> None:
         teams = list_all_teams(self.db_path)
         self.team_choices = {f"{team['id']} {team['name']}": team["id"] for team in teams}
@@ -172,6 +189,7 @@ class StudentDashboard(tk.Frame):
         self._refresh_team_members()
         self._refresh_roadmap_tree()
         self._refresh_task_list()
+        self._refresh_comments()
         self._refresh_stats()
 
     def _ensure_roadmap(self) -> int | None:
@@ -270,6 +288,14 @@ class StudentDashboard(tk.Frame):
         self.task_table.set_rows(rows)
         self._refresh_stats()
 
+    def _refresh_comments(self) -> None:
+        if not self.current_roadmap_id:
+            self.comment_table.set_rows([])
+            return
+        comments = list_roadmap_comments(self.db_path, self.current_roadmap_id)
+        rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
+        self.comment_table.set_rows(rows)
+
     def _set_task_status(self, status: str) -> None:
         if self.current_roadmap_status != "Approved":
             messagebox.showwarning("Not approved", "Roadmap is not approved yet.")
@@ -298,6 +324,36 @@ class StudentDashboard(tk.Frame):
         add_update(self.db_path, task_id, user_id, text)
         self.update_text.delete("1.0", tk.END)
         self._refresh_updates()
+
+    def _add_comment(self) -> None:
+        if not self.current_roadmap_id:
+            messagebox.showwarning("No roadmap", "Create a roadmap first.")
+            return
+        selection = self.member_select.get()
+        if not selection:
+            messagebox.showwarning("No member", "Select a member for this comment.")
+            return
+        user_name = selection.split(" ", 1)[1]
+        modal = Modal(self, "Add Comment")
+        tk.Label(modal.body, text="Comment").pack(anchor="w")
+        note = tk.Text(modal.body, height=4, width=40)
+        note.pack(fill="x", pady=6)
+
+        def save() -> None:
+            text = note.get("1.0", tk.END).strip()
+            if not text:
+                messagebox.showwarning("Missing data", "Enter a comment.")
+                return
+            add_roadmap_comment(self.db_path, self.current_roadmap_id, user_name, text, "comment")
+            modal.destroy()
+            self._refresh_comments()
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        modal.bind("<Return>", lambda _e: save())
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
 
     def _refresh_updates(self) -> None:
         task_id = self._selected_task_id()
