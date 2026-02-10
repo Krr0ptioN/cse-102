@@ -101,3 +101,82 @@ def list_roadmaps_for_class(db_path: str, class_id: int) -> list[dict]:
         ]
     finally:
         conn.close()
+
+
+def get_latest_roadmap(db_path: str, team_id: int) -> dict | None:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            """
+            SELECT id, status, created_at
+            FROM roadmaps
+            WHERE team_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (team_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        return {"id": row[0], "status": row[1], "created_at": row[2]}
+    finally:
+        conn.close()
+
+
+def create_phase(db_path: str, roadmap_id: int, name: str, sort_order: int) -> int:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO phases(roadmap_id, name, sort_order) VALUES (?, ?, ?)",
+            (roadmap_id, name, sort_order),
+        )
+        conn.commit()
+        return int(cur.lastrowid)
+    finally:
+        conn.close()
+
+
+def create_task(
+    db_path: str,
+    phase_id: int,
+    title: str,
+    weight: int,
+    assignee_user_id: int | None = None,
+) -> int:
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            """
+            INSERT INTO tasks(phase_id, title, weight, status, assignee_user_id, notes)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (phase_id, title, weight, "Pending", assignee_user_id, None),
+        )
+        conn.commit()
+        return int(cur.lastrowid)
+    finally:
+        conn.close()
+
+
+def list_phases_with_tasks(db_path: str, roadmap_id: int) -> list[dict]:
+    conn = get_connection(db_path)
+    try:
+        phase_rows = conn.execute(
+            "SELECT id, name FROM phases WHERE roadmap_id = ? ORDER BY sort_order",
+            (roadmap_id,),
+        ).fetchall()
+        phases = []
+        for phase_id, name in phase_rows:
+            task_rows = conn.execute(
+                "SELECT id, title, weight, status FROM tasks WHERE phase_id = ? ORDER BY id",
+                (phase_id,),
+            ).fetchall()
+            tasks = [
+                {"id": row[0], "title": row[1], "weight": row[2], "status": row[3]}
+                for row in task_rows
+            ]
+            phases.append({"id": phase_id, "name": name, "tasks": tasks})
+        return phases
+    finally:
+        conn.close()
