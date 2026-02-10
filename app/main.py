@@ -4,6 +4,10 @@ import tkinter as tk
 from pathlib import Path
 
 from app.db.schema import init_db
+from app.services.class import ClassService
+from app.services.roadmap import RoadmapService
+from app.services.task import TaskService
+from app.services.team import TeamService
 from app.ui.theme import apply_theme
 from app.ui.role_select import RoleSelectFrame
 
@@ -16,6 +20,10 @@ class App(tk.Tk):
         apply_theme(self)
         self.db_path = str(Path(__file__).resolve().parents[1] / "app.db")
         init_db(self.db_path)
+        self.class_service = ClassService(self.db_path)
+        self.team_service = TeamService(self.db_path)
+        self.roadmap_service = RoadmapService(self.db_path)
+        self.task_service = TaskService(self.db_path)
 
         self.container = tk.Frame(self)
         self.container.pack(fill="both", expand=True)
@@ -39,7 +47,14 @@ class App(tk.Tk):
         from app.ui.teacher_dashboard import TeacherDashboard
 
         self._clear_frames()
-        frame = TeacherDashboard(self.container, self.db_path, self._show_role_select)
+        frame = TeacherDashboard(
+            self.container,
+            self.class_service,
+            self.team_service,
+            self.roadmap_service,
+            self.task_service,
+            self._show_role_select,
+        )
         self.frames["teacher"] = frame
         frame.pack(fill="both", expand=True)
 
@@ -47,7 +62,13 @@ class App(tk.Tk):
         from app.ui.student_dashboard import StudentDashboard
 
         self._clear_frames()
-        frame = StudentDashboard(self.container, self.db_path, self._show_role_select)
+        frame = StudentDashboard(
+            self.container,
+            self.team_service,
+            self.roadmap_service,
+            self.task_service,
+            self._show_role_select,
+        )
         self.frames["student"] = frame
         frame.pack(fill="both", expand=True)
 

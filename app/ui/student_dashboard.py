@@ -12,16 +12,22 @@ from app.ui.components import AppShell, DataTable, DetailsDrawer, Modal, Section
 
 
 class StudentDashboard(tk.Frame):
-    def __init__(self, master, db_path: str, on_back) -> None:
+    def __init__(
+        self,
+        master,
+        team_service: TeamService,
+        roadmap_service: RoadmapService,
+        task_service: TaskService,
+        on_back,
+    ) -> None:
         super().__init__(master)
-        self.db_path = db_path
         self.on_back = on_back
         self.current_team_id: int | None = None
         self.current_roadmap_id: int | None = None
         self.current_roadmap_status: str | None = None
-        self.team_service = TeamService(db_path)
-        self.roadmap_service = RoadmapService(db_path)
-        self.task_service = TaskService(db_path)
+        self.team_service = team_service
+        self.roadmap_service = roadmap_service
+        self.task_service = task_service
 
         self.shell = AppShell(self, "Student Workspace", on_back)
         self.shell.pack(fill="both", expand=True)
