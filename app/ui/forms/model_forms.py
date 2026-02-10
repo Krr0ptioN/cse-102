@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.ui.forms.base import Form
-from app.ui.forms.fields import TextAreaField, TextField
+from app.ui.forms.fields import SelectField, TextAreaField, TextField
 from app.ui.forms.validators import email, is_int, max_len, required
 
 
@@ -46,5 +46,18 @@ class TaskForm(Form):
             [
                 TextField("title", "Task Title", [required, max_len(80)], width=20),
                 TextField("weight", "Weight", [required, is_int, max_len(3)], width=8),
+            ]
+        )
+
+
+class CheckinForm(Form):
+    def __init__(self) -> None:
+        super().__init__(
+            [
+                SelectField("status", "Status", [required]),
+                TextAreaField("wins", "Wins", [required]),
+                TextAreaField("risks", "Risks", [required]),
+                TextAreaField("next_goal", "Next Goal", [required]),
+                TextAreaField("help_needed", "Help Needed", []),
             ]
         )

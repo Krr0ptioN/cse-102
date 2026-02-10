@@ -22,6 +22,12 @@ class Form:
             if field.name in data:
                 field.set(str(data[field.name]))
 
+    def get_field(self, name: str) -> Field | None:
+        for field in self.fields:
+            if field.name == name:
+                return field
+        return None
+
     def clear(self) -> None:
         for field in self.fields:
             field.clear()

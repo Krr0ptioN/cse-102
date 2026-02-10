@@ -1,3 +1,4 @@
+from app.ui.student.checkins import StudentCheckinsSection
 from app.ui.student.comments import StudentCommentsSection
 from app.ui.student.drawer import StudentDrawer
 from app.ui.student.roadmap import RoadmapBuilderSection
@@ -9,5 +10,6 @@ __all__ = [
     "RoadmapBuilderSection",
     "TaskSection",
     "StudentCommentsSection",
+    "StudentCheckinsSection",
     "StudentDrawer",
 ]

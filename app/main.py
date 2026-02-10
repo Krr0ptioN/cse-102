@@ -46,6 +46,7 @@ class App(tk.Tk):
         frame = TeacherDashboard(
             self.container,
             self.services.class_service,
+            self.services.checkin_service,
             self.services.team_service,
             self.services.roadmap_service,
             self.services.task_service,
@@ -61,6 +62,7 @@ class App(tk.Tk):
         frame = StudentDashboard(
             self.container,
             self.services.class_service,
+            self.services.checkin_service,
             self.services.team_service,
             self.services.roadmap_service,
             self.services.task_service,

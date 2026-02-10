@@ -82,6 +82,33 @@ CREATE TABLE IF NOT EXISTS roadmap_comments (
     FOREIGN KEY(roadmap_id) REFERENCES roadmaps(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS checkins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    week_end TEXT NOT NULL,
+    status TEXT NOT NULL,
+    wins TEXT NOT NULL,
+    risks TEXT NOT NULL,
+    next_goal TEXT NOT NULL,
+    help_needed TEXT,
+    metrics_total INTEGER NOT NULL,
+    metrics_done INTEGER NOT NULL,
+    metrics_percent INTEGER NOT NULL,
+    submitted_at TEXT NOT NULL,
+    FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS checkin_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    checkin_id INTEGER NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    FOREIGN KEY(checkin_id) REFERENCES checkins(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS team_invitations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     team_id INTEGER NOT NULL,

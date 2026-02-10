@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import messagebox
+from datetime import date, timedelta
+from tkinter import messagebox, ttk
 
+from app.services.checkin import CheckinService
 from app.services.roadmap import RoadmapService
 from app.services.task import TaskService
 from app.services.team import TeamService
@@ -13,6 +15,7 @@ from app.ui.components import AppShell, Modal, bind_modal_keys
 from app.ui.forms import CommentForm, TaskForm
 from app.ui.student import (
     RoadmapBuilderSection,
+    StudentCheckinsSection,
     StudentCommentsSection,
     StudentDrawer,
     StudentStatsRow,
@@ -25,6 +28,7 @@ class StudentDashboard(tk.Frame):
         self,
         master,
         class_service: ClassService,
+        checkin_service: CheckinService,
         team_service: TeamService,
         roadmap_service: RoadmapService,
         task_service: TaskService,
@@ -37,6 +41,7 @@ class StudentDashboard(tk.Frame):
         self.current_roadmap_status: str | None = None
         self.active_student_id: int | None = None
         self.class_service = class_service
+        self.checkin_service = checkin_service
         self.team_service = team_service
         self.roadmap_service = roadmap_service
         self.task_service = task_service
@@ -80,8 +85,14 @@ class StudentDashboard(tk.Frame):
         )
         self.task_section.grid(row=1, column=1, sticky="nsew", padx=8, pady=8)
 
-        self.comments_section = StudentCommentsSection(content, self._add_comment)
-        self.comments_section.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
+        bottom_tabs = ttk.Notebook(content)
+        bottom_tabs.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
+
+        self.comments_section = StudentCommentsSection(bottom_tabs, self._add_comment)
+        bottom_tabs.add(self.comments_section, text="Comments")
+
+        self.checkins_section = StudentCheckinsSection(bottom_tabs, self._submit_checkin)
+        bottom_tabs.add(self.checkins_section, text="Check-ins")
 
         self.drawer = StudentDrawer(content)
         self.drawer.grid(row=1, column=2, sticky="nsew", padx=8, pady=8)
@@ -109,6 +120,8 @@ class StudentDashboard(tk.Frame):
             self.comments_section.set_comment_rows([])
             self.task_section.set_update_rows([])
             self.roadmap_section.clear_tree()
+            self.checkins_section.set_rows([])
+            self.checkins_section.set_progress(0, 0, 0)
 
     def _refresh_students(self) -> None:
         students = self.class_service.list_users(role="student")
@@ -175,6 +188,7 @@ class StudentDashboard(tk.Frame):
         self._refresh_roadmap_tree()
         self._refresh_task_list()
         self._refresh_comments()
+        self._refresh_checkins()
         self._refresh_stats()
 
     def _show_team_details(self) -> None:
@@ -285,6 +299,7 @@ class StudentDashboard(tk.Frame):
         self.tasks_cache = self.task_service.list_tasks_for_roadmap(self.current_roadmap_id)
         rows = [(t["id"], t["title"], t["status"], t["weight"]) for t in self.tasks_cache]
         self.task_section.set_task_rows(rows)
+        self._refresh_progress()
         self._refresh_stats()
 
     def _refresh_comments(self) -> None:
@@ -294,6 +309,32 @@ class StudentDashboard(tk.Frame):
         comments = self.roadmap_service.list_roadmap_comments(self.current_roadmap_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
         self.comments_section.set_comment_rows(rows)
+
+    def _refresh_checkins(self) -> None:
+        if not self.current_team_id:
+            self.checkins_section.set_rows([])
+            return
+        checkins = self.checkin_service.list_checkins_for_team(self.current_team_id)
+        rows = [
+            (
+                c["id"],
+                f"{c['week_start']} → {c['week_end']}",
+                c["status"],
+                f"{c['percent']}%",
+                c["submitted_at"],
+            )
+            for c in checkins
+        ]
+        self.checkins_section.set_rows(rows)
+
+    def _refresh_progress(self) -> None:
+        if not self.current_team_id:
+            self.checkins_section.set_progress(0, 0, 0)
+            return
+        metrics = self.checkin_service.compute_metrics(self.current_team_id)
+        self.checkins_section.set_progress(
+            metrics["percent"], metrics["done"], metrics["total"]
+        )
 
     def _set_task_status(self, status: str) -> None:
         if self.current_roadmap_status != "Approved":
@@ -323,6 +364,46 @@ class StudentDashboard(tk.Frame):
         self.task_service.add_update(task_id, user_id, text)
         self.task_section.clear_update_text()
         self._refresh_updates()
+
+    def _current_week_range(self) -> tuple[str, str]:
+        today = date.today()
+        start = today - timedelta(days=today.weekday())
+        end = start + timedelta(days=6)
+        return start.isoformat(), end.isoformat()
+
+    def _submit_checkin(self) -> None:
+        if not self.current_team_id:
+            messagebox.showwarning("No team", "Select a team first.")
+            return
+        if not self.current_roadmap_id:
+            messagebox.showwarning("No roadmap", "Create a roadmap first.")
+            return
+        metrics = self.checkin_service.compute_metrics(self.current_team_id)
+        if metrics["total"] == 0:
+            messagebox.showwarning("No tasks", "Add tasks before submitting a check-in.")
+            return
+        errors = self.checkins_section.errors()
+        if errors:
+            messagebox.showwarning("Invalid data", "\n".join(errors))
+            return
+        week_start, week_end = self._current_week_range()
+        if self.checkin_service.checkin_exists(self.current_team_id, week_start):
+            messagebox.showwarning("Already submitted", "This week already has a check-in.")
+            return
+        data = self.checkins_section.get_data()
+        self.checkin_service.create_checkin(
+            self.current_team_id,
+            week_start,
+            week_end,
+            data["status"],
+            data["wins"],
+            data["risks"],
+            data["next_goal"],
+            data.get("help_needed") or None,
+            metrics,
+        )
+        self.checkins_section.clear_form()
+        self._refresh_checkins()
 
     def _add_comment(self) -> None:
         if not self.current_roadmap_id:
