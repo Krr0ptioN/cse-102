@@ -5,10 +5,7 @@ from pathlib import Path
 
 from app.db.connector import DBConnector
 from app.db.schema import init_db
-from app.services.class import ClassService
-from app.services.roadmap import RoadmapService
-from app.services.task import TaskService
-from app.services.team import TeamService
+from app.services.factory import ServiceFactory
 from app.ui.theme import apply_theme
 from app.ui.role_select import RoleSelectFrame
 
@@ -22,10 +19,7 @@ class App(tk.Tk):
         self.db_path = str(Path(__file__).resolve().parents[1] / "app.db")
         init_db(self.db_path)
         self.db = DBConnector(self.db_path)
-        self.class_service = ClassService(self.db)
-        self.team_service = TeamService(self.db)
-        self.roadmap_service = RoadmapService(self.db)
-        self.task_service = TaskService(self.db)
+        self.services = ServiceFactory(self.db)
 
         self.container = tk.Frame(self)
         self.container.pack(fill="both", expand=True)
@@ -51,10 +45,10 @@ class App(tk.Tk):
         self._clear_frames()
         frame = TeacherDashboard(
             self.container,
-            self.class_service,
-            self.team_service,
-            self.roadmap_service,
-            self.task_service,
+            self.services.class_service,
+            self.services.team_service,
+            self.services.roadmap_service,
+            self.services.task_service,
             self._show_role_select,
         )
         self.frames["teacher"] = frame
@@ -66,9 +60,9 @@ class App(tk.Tk):
         self._clear_frames()
         frame = StudentDashboard(
             self.container,
-            self.team_service,
-            self.roadmap_service,
-            self.task_service,
+            self.services.team_service,
+            self.services.roadmap_service,
+            self.services.task_service,
             self._show_role_select,
         )
         self.frames["student"] = frame
