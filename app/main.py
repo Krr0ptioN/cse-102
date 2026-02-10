@@ -4,6 +4,7 @@ import tkinter as tk
 from pathlib import Path
 
 from app.db.schema import init_db
+from app.ui.theme import apply_theme
 from app.ui.role_select import RoleSelectFrame
 
 
@@ -12,6 +13,7 @@ class App(tk.Tk):
         super().__init__()
         self.title("Project Lifecycle Engine")
         self.geometry("1000x700")
+        apply_theme(self)
         self.db_path = str(Path(__file__).resolve().parents[1] / "app.db")
         init_db(self.db_path)
 
