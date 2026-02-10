@@ -3,14 +3,16 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+from app.services.checkin import CheckinService
 from app.services.classes import ClassService
 from app.services.roadmap import RoadmapService
 from app.services.task import TaskService
 from app.services.team import TeamService
-from app.ui.charts import show_charts_window
+from app.ui.charts import show_reports_window
 from app.ui.components import AppShell, Modal, bind_modal_keys
 from app.ui.teacher import (
     ClassSetupSection,
+    CheckinsSection,
     RoadmapReviewSection,
     StudentRosterSection,
     TeacherDrawer,
@@ -25,6 +27,7 @@ class TeacherDashboard(tk.Frame):
         self,
         master,
         class_service: ClassService,
+        checkin_service: CheckinService,
         team_service: TeamService,
         roadmap_service: RoadmapService,
         task_service: TaskService,
@@ -35,6 +38,7 @@ class TeacherDashboard(tk.Frame):
         self.class_id: int | None = None
         self.teams_cache: list[dict] = []
         self.class_service = class_service
+        self.checkin_service = checkin_service
         self.team_service = team_service
         self.roadmap_service = roadmap_service
         self.task_service = task_service
@@ -46,6 +50,7 @@ class TeacherDashboard(tk.Frame):
         self._refresh_students()
         self._refresh_teams()
         self._refresh_roadmaps()
+        self._refresh_checkins()
         self._refresh_stats()
 
     def _build_layout(self) -> None:
@@ -87,6 +92,11 @@ class TeacherDashboard(tk.Frame):
             tabs, self._add_comment, self._approve_roadmap, self._refresh_comments
         )
         tabs.add(self.roadmap_section, text="Roadmaps")
+
+        self.checkins_section = CheckinsSection(
+            tabs, self._refresh_checkin_comments, self._add_checkin_comment, self._approve_checkin
+        )
+        tabs.add(self.checkins_section, text="Check-ins")
 
         self.drawer = TeacherDrawer(content)
         self.drawer.grid(row=1, column=2, rowspan=2, sticky="nsew", padx=8, pady=8)
@@ -299,6 +309,25 @@ class TeacherDashboard(tk.Frame):
         self.roadmap_section.set_roadmap_rows(rows)
         self._refresh_comments()
 
+    def _refresh_checkins(self) -> None:
+        if not self.class_id:
+            self.checkins_section.set_rows([])
+            return
+        checkins = self.checkin_service.list_checkins_for_class(self.class_id)
+        rows = [
+            (
+                c["id"],
+                c["team"],
+                f"{c['week_start']} → {c['week_end']}",
+                c["status"],
+                f"{c['percent']}%",
+                c["submitted_at"],
+            )
+            for c in checkins
+        ]
+        self.checkins_section.set_rows(rows)
+        self._refresh_checkin_comments()
+
     def _refresh_stats(self) -> None:
         students = self.class_service.list_users(role="student")
         teams = self.team_service.list_teams(self.class_id) if self.class_id else []
@@ -313,15 +342,19 @@ class TeacherDashboard(tk.Frame):
         if not self.class_id:
             messagebox.showwarning("No class", "Create a class first.")
             return
-        tasks = self.task_service.list_tasks_for_class(self.class_id)
-        title = "Class Charts"
         team_id = self._selected_team_id()
-        if team_id:
-            team = self.team_service.get_team(team_id)
-            principal = team.get("principal_name") if team else None
-            if principal:
-                title = f"{title} · Selected Team Principal: {principal}"
-        show_charts_window(self, title, tasks)
+        if not team_id:
+            messagebox.showwarning("No team", "Select a team to view reports.")
+            return
+        team = self.team_service.get_team(team_id)
+        team_name = team.get("name", "Team") if team else "Team"
+        tasks = self.task_service.list_tasks_for_team(team_id)
+        checkins = self.checkin_service.list_checkins_for_team(team_id)
+        title = "Team Reports"
+        principal = team.get("principal_name") if team else None
+        if principal:
+            title = f"{title} · Principal: {principal}"
+        show_reports_window(self, title, team_name, tasks, checkins)
 
     def _selected_team_id(self) -> int | None:
         return self.team_section.selected_team_id()
@@ -338,6 +371,16 @@ class TeacherDashboard(tk.Frame):
         comments = self.roadmap_service.list_roadmap_comments(roadmap_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
         self.roadmap_section.set_comment_rows(rows)
+
+    def _refresh_checkin_comments(self) -> None:
+        checkin_id = self.checkins_section.selected_id()
+        if not checkin_id:
+            self.checkins_section.set_comment_rows([])
+            return
+        self._show_checkin_details()
+        comments = self.checkin_service.list_checkin_comments(checkin_id)
+        rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
+        self.checkins_section.set_comment_rows(rows)
 
     def _show_roadmap_details(self) -> None:
         selection = self.roadmap_section.roadmap_table.selection()
@@ -390,6 +433,100 @@ class TeacherDashboard(tk.Frame):
         )
         tk.Button(self.drawer.actions, text="Delete", command=self._delete_team).pack(
             side="left", padx=4
+        )
+
+    def _show_checkin_details(self) -> None:
+        checkin_id = self.checkins_section.selected_id()
+        if not checkin_id:
+            return
+        checkin = self.checkin_service.get_checkin(checkin_id)
+        if not checkin:
+            return
+        team = self.team_service.get_team(checkin["team_id"])
+        self.drawer.clear()
+        if team:
+            self._render_team_header((team["id"], team["name"], team.get("principal_name") or "-"))
+        tk.Label(self.drawer.body, text=f"Check-in #{checkin['id']}").pack(anchor="w")
+        tk.Label(
+            self.drawer.body,
+            text=f"Week: {checkin['week_start']} → {checkin['week_end']}",
+        ).pack(anchor="w")
+        tk.Label(self.drawer.body, text=f"Status: {checkin['status']}").pack(anchor="w")
+        tk.Label(
+            self.drawer.body,
+            text=f"Progress: {checkin['metrics_percent']}% "
+            f"({checkin['metrics_done']}/{checkin['metrics_total']})",
+        ).pack(anchor="w")
+        tk.Label(self.drawer.body, text="Wins").pack(anchor="w", pady=(8, 0))
+        tk.Label(self.drawer.body, text=checkin["wins"], wraplength=220, justify="left").pack(
+            anchor="w"
+        )
+        tk.Label(self.drawer.body, text="Risks").pack(anchor="w", pady=(8, 0))
+        tk.Label(self.drawer.body, text=checkin["risks"], wraplength=220, justify="left").pack(
+            anchor="w"
+        )
+        tk.Label(self.drawer.body, text="Next Goal").pack(anchor="w", pady=(8, 0))
+        tk.Label(
+            self.drawer.body, text=checkin["next_goal"], wraplength=220, justify="left"
+        ).pack(anchor="w")
+        if checkin["help_needed"]:
+            tk.Label(self.drawer.body, text="Help Needed").pack(anchor="w", pady=(8, 0))
+            tk.Label(
+                self.drawer.body,
+                text=checkin["help_needed"],
+                wraplength=220,
+                justify="left",
+            ).pack(anchor="w")
+
+    def _add_checkin_comment(self) -> None:
+        checkin_id = self.checkins_section.selected_id()
+        if not checkin_id:
+            messagebox.showwarning("No check-in", "Select a check-in first.")
+            return
+        modal = Modal(self, "Add Comment")
+        form = CommentForm()
+        form.render(modal.body)
+
+        def save() -> None:
+            errors = form.validate()
+            if errors:
+                messagebox.showwarning("Invalid data", "\n".join(errors))
+                return
+            text = form.get_data()["text"]
+            self.checkin_service.add_checkin_comment(checkin_id, "Teacher", text, "comment")
+            modal.destroy()
+            self._refresh_checkin_comments()
+
+        bind_modal_keys(modal, save)
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+
+    def _approve_checkin(self) -> None:
+        checkin_id = self.checkins_section.selected_id()
+        if not checkin_id:
+            messagebox.showwarning("No check-in", "Select a check-in first.")
+            return
+        modal = Modal(self, "Approval Note")
+        form = ApprovalNoteForm()
+        form.render(modal.body)
+
+        def save() -> None:
+            text = form.get_data()["text"]
+            if text:
+                self.checkin_service.add_checkin_comment(
+                    checkin_id, "Teacher", text, "approval"
+                )
+            modal.destroy()
+            self._refresh_checkin_comments()
+
+        bind_modal_keys(modal, save)
+        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+            side="right", padx=4
+        )
+        tk.Button(modal.actions, text="Approve", command=save).pack(
+            side="right", padx=4
         )
 
     def _render_team_header(self, team_row: tuple | None = None) -> None:

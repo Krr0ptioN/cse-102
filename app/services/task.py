@@ -77,3 +77,21 @@ class TaskService(Service):
                 {"id": row[0], "title": row[1], "weight": row[2], "status": row[3]}
                 for row in cur.fetchall()
             ]
+
+    def list_tasks_for_team(self, team_id: int) -> list[dict]:
+        with self.db.connect() as conn:
+            cur = conn.execute(
+                """
+                SELECT tasks.id, tasks.title, tasks.weight, tasks.status
+                FROM tasks
+                JOIN phases ON phases.id = tasks.phase_id
+                JOIN roadmaps ON roadmaps.id = phases.roadmap_id
+                WHERE roadmaps.team_id = ?
+                ORDER BY tasks.id
+                """,
+                (team_id,),
+            )
+            return [
+                {"id": row[0], "title": row[1], "weight": row[2], "status": row[3]}
+                for row in cur.fetchall()
+            ]
