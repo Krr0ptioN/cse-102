@@ -1,5 +1,3 @@
-import sqlite3
-
 from app.db.connector import DBConnector
 
 SCHEMA_SQL = """

@@ -3,29 +3,10 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from app.services.class_service import (
-    create_class,
-    create_user,
-    delete_user,
-    list_users,
-    update_user,
-)
-from app.services.roadmap_service import (
-    add_roadmap_comment,
-    approve_roadmap,
-    list_roadmap_comments,
-    list_roadmaps_for_class,
-)
-from app.services.task_service import list_tasks_for_class
-from app.services.team_service import (
-    add_team_member,
-    create_team,
-    delete_team,
-    list_team_members,
-    list_teams,
-    update_team,
-    update_team_principal,
-)
+from app.services.class import ClassService
+from app.services.roadmap import RoadmapService
+from app.services.task import TaskService
+from app.services.team import TeamService
 from app.ui.charts import show_charts_window
 from app.ui.components import AppShell, DataTable, DetailsDrawer, Modal, Section, StatCard
 
@@ -37,6 +18,10 @@ class TeacherDashboard(tk.Frame):
         self.on_back = on_back
         self.class_id: int | None = None
         self.teams_cache: list[dict] = []
+        self.class_service = ClassService(db_path)
+        self.team_service = TeamService(db_path)
+        self.roadmap_service = RoadmapService(db_path)
+        self.task_service = TaskService(db_path)
 
         self.shell = AppShell(self, "Teacher Dashboard", on_back)
         self.shell.pack(fill="both", expand=True)
@@ -195,7 +180,7 @@ class TeacherDashboard(tk.Frame):
         if not name or not term:
             messagebox.showwarning("Missing data", "Enter a class name and term.")
             return
-        self.class_id = create_class(self.db_path, name, term)
+        self.class_id = self.class_service.create_class(name, term)
         self.class_status.config(text=f"Active class: {name} ({term})")
         self._refresh_teams()
         self._refresh_roadmaps()
@@ -207,7 +192,7 @@ class TeacherDashboard(tk.Frame):
         if not name or not email:
             messagebox.showwarning("Missing data", "Enter student name and email.")
             return
-        create_user(self.db_path, name, email, "student")
+        self.class_service.create_user(name, email, "student")
         self.student_name_entry.delete(0, tk.END)
         self.student_email_entry.delete(0, tk.END)
         self._refresh_students()
@@ -221,7 +206,7 @@ class TeacherDashboard(tk.Frame):
         if not name:
             messagebox.showwarning("Missing data", "Enter a team name.")
             return
-        create_team(self.db_path, self.class_id, name, None)
+        self.team_service.create_team(self.class_id, name, None)
         self.team_name_entry.delete(0, tk.END)
         self._refresh_teams()
         self._refresh_roadmaps()
@@ -237,7 +222,7 @@ class TeacherDashboard(tk.Frame):
             messagebox.showwarning("No student", "Select a student to add.")
             return
         user_id = int(selection.split(" ", 1)[0])
-        add_team_member(self.db_path, team_id, user_id)
+        self.team_service.add_team_member(team_id, user_id)
         self._refresh_team_members()
 
     def _set_principal(self) -> None:
@@ -250,7 +235,7 @@ class TeacherDashboard(tk.Frame):
             messagebox.showwarning("No student", "Select a principal student.")
             return
         user_id = int(selection.split(" ", 1)[0])
-        update_team_principal(self.db_path, team_id, user_id)
+        self.team_service.update_team_principal(team_id, user_id)
         self._refresh_teams()
 
     def _approve_roadmap(self) -> None:
@@ -267,8 +252,10 @@ class TeacherDashboard(tk.Frame):
         def save() -> None:
             text = note.get("1.0", tk.END).strip()
             if text:
-                add_roadmap_comment(self.db_path, roadmap_id, "Teacher", text, "approval")
-            approve_roadmap(self.db_path, roadmap_id)
+                self.roadmap_service.add_roadmap_comment(
+                    roadmap_id, "Teacher", text, "approval"
+                )
+            self.roadmap_service.approve_roadmap(roadmap_id)
             modal.destroy()
             self._refresh_roadmaps()
             self._refresh_comments()
@@ -298,7 +285,7 @@ class TeacherDashboard(tk.Frame):
             if not text:
                 messagebox.showwarning("Missing data", "Enter a comment.")
                 return
-            add_roadmap_comment(self.db_path, roadmap_id, "Teacher", text, "comment")
+            self.roadmap_service.add_roadmap_comment(roadmap_id, "Teacher", text, "comment")
             modal.destroy()
             self._refresh_comments()
 
@@ -310,7 +297,7 @@ class TeacherDashboard(tk.Frame):
         tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
 
     def _refresh_students(self) -> None:
-        students = list_users(self.db_path, role="student")
+        students = self.class_service.list_users(role="student")
         rows = [(s["id"], s["name"], s["email"]) for s in students]
         self.student_table.set_rows(rows)
         choices = [f"{s['id']} {s['name']}" for s in students]
@@ -321,7 +308,7 @@ class TeacherDashboard(tk.Frame):
         if not self.class_id:
             self.team_table.set_rows([])
             return
-        self.teams_cache = list_teams(self.db_path, self.class_id)
+        self.teams_cache = self.team_service.list_teams(self.class_id)
         rows = []
         for team in self.teams_cache:
             principal = team["principal_user_id"] or "-"
@@ -334,7 +321,7 @@ class TeacherDashboard(tk.Frame):
         if not team_id:
             self.team_member_table.set_rows([])
             return
-        members = list_team_members(self.db_path, team_id)
+        members = self.team_service.list_team_members(team_id)
         rows = [(m["id"], m["name"], m["email"]) for m in members]
         self.team_member_table.set_rows(rows)
         self._show_team_details()
@@ -343,15 +330,19 @@ class TeacherDashboard(tk.Frame):
         if not self.class_id:
             self.roadmap_table.set_rows([])
             return
-        roadmaps = list_roadmaps_for_class(self.db_path, self.class_id)
+        roadmaps = self.roadmap_service.list_roadmaps_for_class(self.class_id)
         rows = [(r["id"], r["team"], r["status"]) for r in roadmaps]
         self.roadmap_table.set_rows(rows)
         self._refresh_comments()
 
     def _refresh_stats(self) -> None:
-        students = list_users(self.db_path, role="student")
-        teams = list_teams(self.db_path, self.class_id) if self.class_id else []
-        roadmaps = list_roadmaps_for_class(self.db_path, self.class_id) if self.class_id else []
+        students = self.class_service.list_users(role="student")
+        teams = self.team_service.list_teams(self.class_id) if self.class_id else []
+        roadmaps = (
+            self.roadmap_service.list_roadmaps_for_class(self.class_id)
+            if self.class_id
+            else []
+        )
         self.stat_students.set_value(str(len(students)))
         self.stat_teams.set_value(str(len(teams)))
         self.stat_roadmaps.set_value(str(len(roadmaps)))
@@ -360,7 +351,7 @@ class TeacherDashboard(tk.Frame):
         if not self.class_id:
             messagebox.showwarning("No class", "Create a class first.")
             return
-        tasks = list_tasks_for_class(self.db_path, self.class_id)
+        tasks = self.task_service.list_tasks_for_class(self.class_id)
         show_charts_window(self, "Class Charts", tasks)
 
     def _selected_team_id(self) -> int | None:
@@ -380,7 +371,7 @@ class TeacherDashboard(tk.Frame):
         if not roadmap_id:
             self.comment_table.set_rows([])
             return
-        comments = list_roadmap_comments(self.db_path, roadmap_id)
+        comments = self.roadmap_service.list_roadmap_comments(roadmap_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
         self.comment_table.set_rows(rows)
 
@@ -444,7 +435,7 @@ class TeacherDashboard(tk.Frame):
             if not name or not email:
                 messagebox.showwarning("Missing data", "Enter a name and email.")
                 return
-            update_user(self.db_path, student_id, name, email)
+            self.class_service.update_user(student_id, name, email)
             modal.destroy()
             self._refresh_students()
             self._refresh_stats()
@@ -463,7 +454,7 @@ class TeacherDashboard(tk.Frame):
             return
         if not messagebox.askyesno("Confirm", "Delete this student?"):
             return
-        delete_user(self.db_path, student_id)
+        self.class_service.delete_user(student_id)
         self._refresh_students()
         self._refresh_team_members()
         self._refresh_stats()
@@ -485,7 +476,7 @@ class TeacherDashboard(tk.Frame):
             if not name:
                 messagebox.showwarning("Missing data", "Enter a team name.")
                 return
-            update_team(self.db_path, team_id, name)
+            self.team_service.update_team(team_id, name)
             modal.destroy()
             self._refresh_teams()
 
@@ -503,7 +494,7 @@ class TeacherDashboard(tk.Frame):
             return
         if not messagebox.askyesno("Confirm", "Delete this team?"):
             return
-        delete_team(self.db_path, team_id)
+        self.team_service.delete_team(team_id)
         self._refresh_teams()
         self._refresh_team_members()
         self._refresh_roadmaps()

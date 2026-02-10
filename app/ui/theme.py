@@ -25,7 +25,7 @@ def apply_theme(root: tk.Tk) -> None:
 
     root.configure(bg=colors["bg"])
 
-    root.option_add("*Font", "Segoe UI 10")
+    root.option_add("*Font", "{Segoe UI} 10")
     root.option_add("*Background", colors["bg"])
     root.option_add("*Foreground", colors["text"])
     root.option_add("*Frame.Background", colors["bg"])
