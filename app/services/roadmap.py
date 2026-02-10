@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.db.connector import DBConnector
+from app.services.base import Service
 
 
 STATUS_DRAFT = "Draft"
@@ -27,9 +27,9 @@ STATES: dict[str, RoadmapState] = {
 }
 
 
-class RoadmapService:
+class RoadmapService(Service):
     def __init__(self, db_path: str) -> None:
-        self.db = DBConnector(db_path)
+        super().__init__(db_path)
 
     def create_roadmap(self, team_id: int) -> int:
         with self.db.transaction() as conn:

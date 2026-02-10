@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from app.db.connector import DBConnector
+from app.services.base import Service
 
 
-class ClassService:
+class ClassService(Service):
     def __init__(self, db_path: str) -> None:
-        self.db = DBConnector(db_path)
+        super().__init__(db_path)
 
     def create_class(self, name: str, term: str) -> int:
         with self.db.transaction() as conn:

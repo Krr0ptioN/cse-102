@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from app.db.connector import DBConnector
+from app.services.base import Service
 
 
-class TaskService:
+class TaskService(Service):
     def __init__(self, db_path: str) -> None:
-        self.db = DBConnector(db_path)
+        super().__init__(db_path)
 
     def update_task_status(self, task_id: int, status: str) -> None:
         with self.db.transaction() as conn:
