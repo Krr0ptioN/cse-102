@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.db.connection import get_connection
+from app.db.connector import DBConnector
 
 
 STATUS_DRAFT = "Draft"
@@ -28,16 +28,13 @@ STATES: dict[str, RoadmapState] = {
 
 
 def create_roadmap(db_path: str, team_id: int) -> int:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         cur = conn.execute(
             "INSERT INTO roadmaps(team_id, status, created_at) VALUES (?, ?, ?)",
             (team_id, STATUS_DRAFT, datetime.utcnow().isoformat()),
         )
-        conn.commit()
         return int(cur.lastrowid)
-    finally:
-        conn.close()
 
 
 def submit_roadmap(db_path: str, roadmap_id: int) -> None:
@@ -49,16 +46,14 @@ def approve_roadmap(db_path: str, roadmap_id: int) -> None:
 
 
 def get_roadmap_status(db_path: str, roadmap_id: int) -> str | None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.connect() as conn:
         cur = conn.execute(
             "SELECT status FROM roadmaps WHERE id = ?",
             (roadmap_id,),
         )
         row = cur.fetchone()
         return row[0] if row else None
-    finally:
-        conn.close()
 
 
 def _transition_status(db_path: str, roadmap_id: int, target: str) -> None:
@@ -72,20 +67,17 @@ def _transition_status(db_path: str, roadmap_id: int, target: str) -> None:
 
 
 def _set_status(db_path: str, roadmap_id: int, status: str) -> None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.execute(
             "UPDATE roadmaps SET status = ? WHERE id = ?",
             (status, roadmap_id),
         )
-        conn.commit()
-    finally:
-        conn.close()
 
 
 def list_roadmaps_for_class(db_path: str, class_id: int) -> list[dict]:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.connect() as conn:
         cur = conn.execute(
             """
             SELECT roadmaps.id, teams.name, roadmaps.status
@@ -99,15 +91,13 @@ def list_roadmaps_for_class(db_path: str, class_id: int) -> list[dict]:
         return [
             {"id": row[0], "team": row[1], "status": row[2]} for row in cur.fetchall()
         ]
-    finally:
-        conn.close()
 
 
 def add_roadmap_comment(
     db_path: str, roadmap_id: int, author: str, text: str, kind: str = "comment"
 ) -> None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.execute(
             """
             INSERT INTO roadmap_comments(roadmap_id, author, text, created_at, kind)
@@ -115,14 +105,11 @@ def add_roadmap_comment(
             """,
             (roadmap_id, author, text, datetime.utcnow().isoformat(), kind),
         )
-        conn.commit()
-    finally:
-        conn.close()
 
 
 def list_roadmap_comments(db_path: str, roadmap_id: int) -> list[dict]:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.connect() as conn:
         cur = conn.execute(
             """
             SELECT author, text, created_at, kind
@@ -141,13 +128,11 @@ def list_roadmap_comments(db_path: str, roadmap_id: int) -> list[dict]:
             }
             for row in cur.fetchall()
         ]
-    finally:
-        conn.close()
 
 
 def get_latest_roadmap(db_path: str, team_id: int) -> dict | None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.connect() as conn:
         cur = conn.execute(
             """
             SELECT id, status, created_at
@@ -162,21 +147,16 @@ def get_latest_roadmap(db_path: str, team_id: int) -> dict | None:
         if not row:
             return None
         return {"id": row[0], "status": row[1], "created_at": row[2]}
-    finally:
-        conn.close()
 
 
 def create_phase(db_path: str, roadmap_id: int, name: str, sort_order: int) -> int:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         cur = conn.execute(
             "INSERT INTO phases(roadmap_id, name, sort_order) VALUES (?, ?, ?)",
             (roadmap_id, name, sort_order),
         )
-        conn.commit()
         return int(cur.lastrowid)
-    finally:
-        conn.close()
 
 
 def create_task(
@@ -186,8 +166,8 @@ def create_task(
     weight: int,
     assignee_user_id: int | None = None,
 ) -> int:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         cur = conn.execute(
             """
             INSERT INTO tasks(phase_id, title, weight, status, assignee_user_id, notes)
@@ -195,15 +175,12 @@ def create_task(
             """,
             (phase_id, title, weight, "Pending", assignee_user_id, None),
         )
-        conn.commit()
         return int(cur.lastrowid)
-    finally:
-        conn.close()
 
 
 def list_phases_with_tasks(db_path: str, roadmap_id: int) -> list[dict]:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.connect() as conn:
         phase_rows = conn.execute(
             "SELECT id, name FROM phases WHERE roadmap_id = ? ORDER BY sort_order",
             (roadmap_id,),
@@ -220,44 +197,30 @@ def list_phases_with_tasks(db_path: str, roadmap_id: int) -> list[dict]:
             ]
             phases.append({"id": phase_id, "name": name, "tasks": tasks})
         return phases
-    finally:
-        conn.close()
 
 
 def update_phase(db_path: str, phase_id: int, name: str) -> None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.execute("UPDATE phases SET name = ? WHERE id = ?", (name, phase_id))
-        conn.commit()
-    finally:
-        conn.close()
 
 
 def delete_phase(db_path: str, phase_id: int) -> None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.execute("DELETE FROM phases WHERE id = ?", (phase_id,))
-        conn.commit()
-    finally:
-        conn.close()
 
 
 def update_task_details(db_path: str, task_id: int, title: str, weight: int) -> None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.execute(
             "UPDATE tasks SET title = ?, weight = ? WHERE id = ?",
             (title, weight, task_id),
         )
-        conn.commit()
-    finally:
-        conn.close()
 
 
 def delete_task(db_path: str, task_id: int) -> None:
-    conn = get_connection(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
-        conn.commit()
-    finally:
-        conn.close()

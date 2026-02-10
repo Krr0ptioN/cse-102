@@ -1,5 +1,7 @@
 import sqlite3
 
+from app.db.connector import DBConnector
+
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
 
@@ -84,18 +86,6 @@ CREATE TABLE IF NOT EXISTS roadmap_comments (
 
 
 def init_db(db_path: str) -> None:
-    conn = sqlite3.connect(db_path)
-    try:
+    db = DBConnector(db_path)
+    with db.transaction() as conn:
         conn.executescript(SCHEMA_SQL)
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def list_tables(db_path: str) -> list[str]:
-    conn = sqlite3.connect(db_path)
-    try:
-        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        return [row[0] for row in cur.fetchall()]
-    finally:
-        conn.close()

@@ -1,4 +1,5 @@
-from app.db.schema import init_db, list_tables
+from app.db.schema import init_db
+from app.services.schema_service import list_tables
 
 
 def test_schema_creates_tables(tmp_path):
