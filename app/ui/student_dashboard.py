@@ -11,19 +11,19 @@ from app.services.team import TeamService
 from app.services.classes import ClassService
 from app.services.validation import validate_roadmap
 from app.ui.charts import show_charts_window
-from app.ui.components import AppShell, Modal, bind_modal_keys
+from app.ui.components import Modal, bind_modal_keys
+from app.ui.dashboard_base import DashboardBase
 from app.ui.forms import CommentForm, TaskForm
 from app.ui.student import (
     RoadmapBuilderSection,
     StudentCheckinsSection,
     StudentCommentsSection,
-    StudentDrawer,
     StudentStatsRow,
     TaskSection,
 )
 
 
-class StudentDashboard(tk.Frame):
+class StudentDashboard(DashboardBase):
     def __init__(
         self,
         master,
@@ -34,8 +34,6 @@ class StudentDashboard(tk.Frame):
         task_service: TaskService,
         on_back,
     ) -> None:
-        super().__init__(master)
-        self.on_back = on_back
         self.current_team_id: int | None = None
         self.current_roadmap_id: int | None = None
         self.current_roadmap_status: str | None = None
@@ -46,19 +44,13 @@ class StudentDashboard(tk.Frame):
         self.roadmap_service = roadmap_service
         self.task_service = task_service
 
-        self.shell = AppShell(self, "Student Workspace", on_back)
-        self.shell.pack(fill="both", expand=True)
+        super().__init__(master, "Student Workspace", on_back)
 
-        self._build_layout()
         self._refresh_students()
 
-    def _build_layout(self) -> None:
+    def build_layout(self) -> None:
         content = self.shell.content
-        content.grid_rowconfigure(1, weight=1)
-        content.grid_rowconfigure(2, weight=1)
-        content.grid_columnconfigure(0, weight=1)
-        content.grid_columnconfigure(1, weight=1)
-        content.grid_columnconfigure(2, weight=0, minsize=260)
+        self.configure_content_grid((1, 1, 0))
 
         self.stats_row = StudentStatsRow(content)
         self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
@@ -91,11 +83,12 @@ class StudentDashboard(tk.Frame):
         self.comments_section = StudentCommentsSection(bottom_tabs, self._add_comment)
         bottom_tabs.add(self.comments_section, text="Comments")
 
-        self.checkins_section = StudentCheckinsSection(bottom_tabs, self._submit_checkin)
+        self.checkins_section = StudentCheckinsSection(
+            bottom_tabs, self._submit_checkin
+        )
         bottom_tabs.add(self.checkins_section, text="Check-ins")
 
-        self.drawer = StudentDrawer(content)
-        self.drawer.grid(row=1, column=2, sticky="nsew", padx=8, pady=8)
+        self.mount_drawer(row=1, column=2)
 
     def _refresh_teams(self) -> None:
         teams = (
@@ -209,7 +202,9 @@ class StudentDashboard(tk.Frame):
             messagebox.showwarning("No team", "Select a team first.")
             return None
         if not self.current_roadmap_id:
-            self.current_roadmap_id = self.roadmap_service.create_roadmap(self.current_team_id)
+            self.current_roadmap_id = self.roadmap_service.create_roadmap(
+                self.current_team_id
+            )
             self.current_roadmap_status = "Draft"
             self.roadmap_section.set_status("Status: Draft")
         return self.current_roadmap_id
@@ -254,7 +249,9 @@ class StudentDashboard(tk.Frame):
             messagebox.showwarning("No roadmap", "Create a roadmap first.")
             return
         if self.current_roadmap_status != "Draft":
-            messagebox.showwarning("Locked", "Roadmap is already submitted or approved.")
+            messagebox.showwarning(
+                "Locked", "Roadmap is already submitted or approved."
+            )
             return
         phases = self.roadmap_service.list_phases_with_tasks(self.current_roadmap_id)
         payload = [{"tasks": [task["weight"] for task in p["tasks"]]} for p in phases]
@@ -296,8 +293,12 @@ class StudentDashboard(tk.Frame):
         if not self.current_roadmap_id:
             self.task_section.set_task_rows([])
             return
-        self.tasks_cache = self.task_service.list_tasks_for_roadmap(self.current_roadmap_id)
-        rows = [(t["id"], t["title"], t["status"], t["weight"]) for t in self.tasks_cache]
+        self.tasks_cache = self.task_service.list_tasks_for_roadmap(
+            self.current_roadmap_id
+        )
+        rows = [
+            (t["id"], t["title"], t["status"], t["weight"]) for t in self.tasks_cache
+        ]
         self.task_section.set_task_rows(rows)
         self._refresh_progress()
         self._refresh_stats()
@@ -380,7 +381,9 @@ class StudentDashboard(tk.Frame):
             return
         metrics = self.checkin_service.compute_metrics(self.current_team_id)
         if metrics["total"] == 0:
-            messagebox.showwarning("No tasks", "Add tasks before submitting a check-in.")
+            messagebox.showwarning(
+                "No tasks", "Add tasks before submitting a check-in."
+            )
             return
         errors = self.checkins_section.errors()
         if errors:
@@ -388,7 +391,9 @@ class StudentDashboard(tk.Frame):
             return
         week_start, week_end = self._current_week_range()
         if self.checkin_service.checkin_exists(self.current_team_id, week_start):
-            messagebox.showwarning("Already submitted", "This week already has a check-in.")
+            messagebox.showwarning(
+                "Already submitted", "This week already has a check-in."
+            )
             return
         data = self.checkins_section.get_data()
         self.checkin_service.create_checkin(
@@ -424,7 +429,9 @@ class StudentDashboard(tk.Frame):
                 messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
             text = form.get_data()["text"]
-            self.roadmap_service.add_roadmap_comment(self.current_roadmap_id, user_name, text, "comment")
+            self.roadmap_service.add_roadmap_comment(
+                self.current_roadmap_id, user_name, text, "comment"
+            )
             modal.destroy()
             self._refresh_comments()
 
@@ -455,7 +462,9 @@ class StudentDashboard(tk.Frame):
 
     def _refresh_stats(self) -> None:
         status = self.current_roadmap_status or "-"
-        done = len([t for t in getattr(self, "tasks_cache", []) if t["status"] == "Done"])
+        done = len(
+            [t for t in getattr(self, "tasks_cache", []) if t["status"] == "Done"]
+        )
         self.stats_row.set_values(status, done)
 
     def _selected_phase_id(self) -> int | None:
@@ -483,7 +492,11 @@ class StudentDashboard(tk.Frame):
         if not row:
             return
         self.drawer.clear()
-        team = self.team_service.get_team(self.current_team_id) if self.current_team_id else None
+        team = (
+            self.team_service.get_team(self.current_team_id)
+            if self.current_team_id
+            else None
+        )
         if team:
             self._render_team_header(team)
         tk.Label(self.drawer.body, text=f"Task #{row['id']}").pack(anchor="w")
@@ -501,7 +514,10 @@ class StudentDashboard(tk.Frame):
             row.pack(fill="x", pady=2)
             tk.Label(row, text="●", fg="#0f766e").pack(side="left")
             tk.Label(
-                row, text=f"{upd['user']}: {upd['text']}", wraplength=200, justify="left"
+                row,
+                text=f"{upd['user']}: {upd['text']}",
+                wraplength=200,
+                justify="left",
             ).pack(side="left", padx=6)
             tk.Label(row, text=upd["created_at"], fg="#5f6b68").pack(side="right")
 
@@ -514,7 +530,9 @@ class StudentDashboard(tk.Frame):
         tk.Label(modal.body, text="Phase Name").grid(row=0, column=0, sticky="w")
         name_entry = tk.Entry(modal.body, width=24)
         name_entry.grid(row=0, column=1, padx=6, pady=4)
-        current = self.roadmap_section.tree.item(f"phase-{phase_id}", "text").replace("Phase: ", "")
+        current = self.roadmap_section.tree.item(f"phase-{phase_id}", "text").replace(
+            "Phase: ", ""
+        )
         name_entry.insert(0, current)
 
         def save() -> None:
@@ -562,7 +580,9 @@ class StudentDashboard(tk.Frame):
                 messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
             data = form.get_data()
-            self.roadmap_service.update_task_details(task_id, data["title"], int(data["weight"]))
+            self.roadmap_service.update_task_details(
+                task_id, data["title"], int(data["weight"])
+            )
             modal.destroy()
             self._refresh_roadmap_tree()
             self._refresh_task_list()
@@ -589,7 +609,11 @@ class StudentDashboard(tk.Frame):
             messagebox.showwarning("No roadmap", "Create a roadmap first.")
             return
         tasks = self.task_service.list_tasks_for_roadmap(self.current_roadmap_id)
-        team = self.team_service.get_team(self.current_team_id) if self.current_team_id else None
+        team = (
+            self.team_service.get_team(self.current_team_id)
+            if self.current_team_id
+            else None
+        )
         principal = team.get("principal_name") if team else None
         title = "Team Charts"
         if team:

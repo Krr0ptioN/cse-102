@@ -9,20 +9,20 @@ from app.services.roadmap import RoadmapService
 from app.services.task import TaskService
 from app.services.team import TeamService
 from app.ui.charts import show_reports_window
-from app.ui.components import AppShell, Modal, bind_modal_keys
+from app.ui.components import Modal, bind_modal_keys
+from app.ui.dashboard_base import DashboardBase
 from app.ui.teacher import (
     ClassSetupSection,
     CheckinsSection,
     RoadmapReviewSection,
     StudentRosterSection,
-    TeacherDrawer,
     TeacherStatsRow,
     TeamSection,
 )
 from app.ui.forms import ApprovalNoteForm, CommentForm, StudentForm
 
 
-class TeacherDashboard(tk.Frame):
+class TeacherDashboard(DashboardBase):
     def __init__(
         self,
         master,
@@ -33,8 +33,6 @@ class TeacherDashboard(tk.Frame):
         task_service: TaskService,
         on_back,
     ) -> None:
-        super().__init__(master)
-        self.on_back = on_back
         self.class_id: int | None = None
         self.teams_cache: list[dict] = []
         self.class_service = class_service
@@ -43,23 +41,17 @@ class TeacherDashboard(tk.Frame):
         self.roadmap_service = roadmap_service
         self.task_service = task_service
 
-        self.shell = AppShell(self, "Teacher Dashboard", on_back)
-        self.shell.pack(fill="both", expand=True)
+        super().__init__(master, "Teacher Dashboard", on_back)
 
-        self._build_layout()
         self._refresh_students()
         self._refresh_teams()
         self._refresh_roadmaps()
         self._refresh_checkins()
         self._refresh_stats()
 
-    def _build_layout(self) -> None:
+    def build_layout(self) -> None:
         content = self.shell.content
-        content.grid_rowconfigure(1, weight=1)
-        content.grid_rowconfigure(2, weight=1)
-        content.grid_columnconfigure(0, weight=1)
-        content.grid_columnconfigure(1, weight=2)
-        content.grid_columnconfigure(2, weight=0, minsize=260)
+        self.configure_content_grid((1, 2, 0))
 
         self.stats_row = TeacherStatsRow(content)
         self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
@@ -68,7 +60,11 @@ class TeacherDashboard(tk.Frame):
         self.class_section.grid(row=1, column=0, sticky="new", padx=8, pady=8)
 
         self.student_section = StudentRosterSection(
-            content, self._add_student, self._edit_student, self._delete_student, self._show_student_details
+            content,
+            self._add_student,
+            self._edit_student,
+            self._delete_student,
+            self._show_student_details,
         )
         self.student_section.grid(row=2, column=0, sticky="nsew", padx=8, pady=8)
 
@@ -94,16 +90,16 @@ class TeacherDashboard(tk.Frame):
         tabs.add(self.roadmap_section, text="Roadmaps")
 
         self.checkins_section = CheckinsSection(
-            tabs, self._refresh_checkin_comments, self._add_checkin_comment, self._approve_checkin
+            tabs,
+            self._refresh_checkin_comments,
+            self._add_checkin_comment,
+            self._approve_checkin,
         )
         tabs.add(self.checkins_section, text="Check-ins")
 
-        self.drawer = TeacherDrawer(content)
-        self.drawer.grid(row=1, column=2, rowspan=2, sticky="nsew", padx=8, pady=8)
+        self.mount_drawer(row=1, column=2, rowspan=2)
 
-        tk.Button(self.shell.topbar.actions, text="View Charts", command=self._show_charts).pack(
-            side="left", padx=6
-        )
+        self.add_topbar_button("View Charts", self._show_charts)
 
     def _create_class(self) -> None:
         errors = self.class_section.errors()
@@ -247,7 +243,9 @@ class TeacherDashboard(tk.Frame):
                 messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
             text = form.get_data()["text"]
-            self.roadmap_service.add_roadmap_comment(roadmap_id, "Teacher", text, "comment")
+            self.roadmap_service.add_roadmap_comment(
+                roadmap_id, "Teacher", text, "comment"
+            )
             modal.destroy()
             self._refresh_comments()
 
@@ -305,7 +303,9 @@ class TeacherDashboard(tk.Frame):
             self.roadmap_section.set_roadmap_rows([])
             return
         roadmaps = self.roadmap_service.list_roadmaps_for_class(self.class_id)
-        rows = [(r["id"], r["team"], r["principal"] or "-", r["status"]) for r in roadmaps]
+        rows = [
+            (r["id"], r["team"], r["principal"] or "-", r["status"]) for r in roadmaps
+        ]
         self.roadmap_section.set_roadmap_rows(rows)
         self._refresh_comments()
 
@@ -415,9 +415,9 @@ class TeacherDashboard(tk.Frame):
         tk.Button(self.drawer.actions, text="Edit", command=self._edit_student).pack(
             side="left", padx=4
         )
-        tk.Button(self.drawer.actions, text="Delete", command=self._delete_student).pack(
-            side="left", padx=4
-        )
+        tk.Button(
+            self.drawer.actions, text="Delete", command=self._delete_student
+        ).pack(side="left", padx=4)
 
     def _show_team_details(self) -> None:
         team_id = self._selected_team_id()
@@ -445,7 +445,9 @@ class TeacherDashboard(tk.Frame):
         team = self.team_service.get_team(checkin["team_id"])
         self.drawer.clear()
         if team:
-            self._render_team_header((team["id"], team["name"], team.get("principal_name") or "-"))
+            self._render_team_header(
+                (team["id"], team["name"], team.get("principal_name") or "-")
+            )
         tk.Label(self.drawer.body, text=f"Check-in #{checkin['id']}").pack(anchor="w")
         tk.Label(
             self.drawer.body,
@@ -458,13 +460,13 @@ class TeacherDashboard(tk.Frame):
             f"({checkin['metrics_done']}/{checkin['metrics_total']})",
         ).pack(anchor="w")
         tk.Label(self.drawer.body, text="Wins").pack(anchor="w", pady=(8, 0))
-        tk.Label(self.drawer.body, text=checkin["wins"], wraplength=220, justify="left").pack(
-            anchor="w"
-        )
+        tk.Label(
+            self.drawer.body, text=checkin["wins"], wraplength=220, justify="left"
+        ).pack(anchor="w")
         tk.Label(self.drawer.body, text="Risks").pack(anchor="w", pady=(8, 0))
-        tk.Label(self.drawer.body, text=checkin["risks"], wraplength=220, justify="left").pack(
-            anchor="w"
-        )
+        tk.Label(
+            self.drawer.body, text=checkin["risks"], wraplength=220, justify="left"
+        ).pack(anchor="w")
         tk.Label(self.drawer.body, text="Next Goal").pack(anchor="w", pady=(8, 0))
         tk.Label(
             self.drawer.body, text=checkin["next_goal"], wraplength=220, justify="left"
@@ -493,7 +495,9 @@ class TeacherDashboard(tk.Frame):
                 messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
             text = form.get_data()["text"]
-            self.checkin_service.add_checkin_comment(checkin_id, "Teacher", text, "comment")
+            self.checkin_service.add_checkin_comment(
+                checkin_id, "Teacher", text, "comment"
+            )
             modal.destroy()
             self._refresh_checkin_comments()
 

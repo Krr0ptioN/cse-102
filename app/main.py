@@ -3,6 +3,9 @@ from __future__ import annotations
 import tkinter as tk
 from pathlib import Path
 
+from app.ui.teacher_dashboard import TeacherDashboard
+from app.ui.student_dashboard import StudentDashboard
+
 from app.db.connector import DBConnector
 from app.db.schema import init_db
 from app.services.factory import ServiceFactory
@@ -40,7 +43,6 @@ class App(tk.Tk):
             self._show_student()
 
     def _show_teacher(self) -> None:
-        from app.ui.teacher_dashboard import TeacherDashboard
 
         self._clear_frames()
         frame = TeacherDashboard(
@@ -56,7 +58,6 @@ class App(tk.Tk):
         frame.pack(fill="both", expand=True)
 
     def _show_student(self) -> None:
-        from app.ui.student_dashboard import StudentDashboard
 
         self._clear_frames()
         frame = StudentDashboard(

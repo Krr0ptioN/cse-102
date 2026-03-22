@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.ui.components import DetailsDrawer
+from app.ui.components.cards import DetailsDrawer
 
 
-class TeacherDrawer(DetailsDrawer):
-    def __init__(self, master) -> None:
-        super().__init__(master, "Details")
+class TeamDrawer(DetailsDrawer):
+    """Reusable drawer with a consistent team header."""
+
+    def __init__(self, master, title: str = "Details") -> None:
+        super().__init__(master, title)
 
     def render_team_header(self, team_id: int, team_name: str, principal: str) -> None:
         tk.Label(self.body, text=f"Team #{team_id}").pack(anchor="w")
