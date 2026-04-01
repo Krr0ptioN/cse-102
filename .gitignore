@@ -2,3 +2,22 @@
 .worktrees/
 __pycache__/
 app.db
+.venv/
+app/.venv/
+.pytest_cache/
+app/.pytest_cache/
+.ruff_cache/
+app/.ruff_cache/
+*.pyc
+
+# local workflow artifacts
+app/.sisyphus/
+app/test-impact-plan.json
+app/.python-version
+app/uv.lock
+
+# docs drafts and exports (not ready for commit)
+app/ui/docs/
+docs/final-report/
+docs/plans/mvp/
+docs/specifications/
