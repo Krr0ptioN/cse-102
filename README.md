@@ -1,32 +1,22 @@
-# Project Lifecycle Engine (MVP)
+# `CSE-102` Teacher-Student Project Assignment Manager
 
 A Tkinter desktop app for managing student project roadmaps, approvals, and progress tracking.
 
-## Requirements
+All application code and tooling now live in the `app/` directory (project root for code). 
+Docs and assets stay at the repository root.
 
-- Python 3.11+
-- Tkinter (bundled with most Python installs)
-- `matplotlib`
-- `pandas`
+## Getting Started
 
-Install deps:
+See `app/README.md` for setup, run, and test instructions (uv + Makefile flow). If you have
+*make* installed, use `make -C app <target>` from the repo root if you prefer not to `cd`.
 
-```bash
-pip install -r requirements.txt
-```
+Otherwise you can follow the process defined within the application's [documentation](/app/README.md).
 
-## Run
+## Disclaimer
 
-```bash
-python -m app.main
-```
+In this project, a lot of code-separation has been done, you'll see certain patterns similar to
+**React.js** component driven development, since the Tkinter as a very surface level and non-industry standard,
+we decided to re-write certain required utilities for proper composable component system which is really 
+required for a complex application.
 
-## MVP Workflow
-
-1. Teacher creates a class and adds students.
-2. Teacher creates teams and assigns members.
-3. Student builds a roadmap with phases and tasks.
-4. Student submits roadmap for approval.
-5. Teacher approves the roadmap.
-6. Students update task status and log updates.
-7. Charts show Gantt and Burndown views.
+For more technical design decision that has been made you can refer to our [specification documentation](/docs/specifications/README.md).
