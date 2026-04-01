@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import tkinter as tk
 
+from app.design_system.typography import Typography
 from app.ui.theme import palette
+
+
+FONT_FAMILY = Typography.primary_font_family()
 
 
 class Modal(tk.Toplevel):
@@ -18,7 +22,7 @@ class Modal(tk.Toplevel):
         self.header = tk.Label(
             self,
             text=title,
-            font=("Segoe UI", 12, "bold"),
+            font=(FONT_FAMILY, 12, "bold"),
             bg=colors["panel"],
             fg=colors["text"],
         )

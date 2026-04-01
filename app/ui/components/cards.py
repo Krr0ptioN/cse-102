@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import tkinter as tk
 
+from app.design_system.typography import Typography
 from app.ui.theme import palette
+
+
+FONT_FAMILY = Typography.primary_font_family()
 
 
 class StatCard(tk.Frame):
@@ -17,7 +21,7 @@ class StatCard(tk.Frame):
         self.label = tk.Label(
             self,
             text=label,
-            font=("Segoe UI", 9),
+            font=(FONT_FAMILY, 9),
             bg=colors["panel"],
             fg=colors["muted"],
         )
@@ -25,7 +29,7 @@ class StatCard(tk.Frame):
         self.value = tk.Label(
             self,
             text=value,
-            font=("Segoe UI", 14, "bold"),
+            font=(FONT_FAMILY, 14, "bold"),
             bg=colors["panel"],
             fg=colors["text"],
         )
@@ -49,7 +53,7 @@ class DetailsDrawer(tk.Frame):
         tk.Label(
             self,
             text=title,
-            font=("Segoe UI", 11, "bold"),
+            font=(FONT_FAMILY, 11, "bold"),
             bg=colors["panel"],
             fg=colors["text"],
         ).pack(anchor="w", padx=12, pady=(12, 6))
