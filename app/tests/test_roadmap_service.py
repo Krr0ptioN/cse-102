@@ -1,5 +1,6 @@
 from app.db.connector import DBConnector
 from app.db.schema import init_db
+from app.repositories.roadmap_repository import RoadmapRepository
 from app.services.roadmap import RoadmapService
 
 
@@ -20,7 +21,8 @@ def test_submit_and_approve(tmp_path):
         )
         team_id = int(cur.lastrowid)
 
-    service = RoadmapService(DBConnector(str(db_path)))
+    repo = RoadmapRepository(DBConnector(str(db_path)))
+    service = RoadmapService(repo)
     roadmap_id = service.create_roadmap(team_id)
     service.submit_roadmap(roadmap_id)
     assert service.get_roadmap_status(roadmap_id) == "Submitted"
