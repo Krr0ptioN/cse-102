@@ -4,14 +4,15 @@ import tkinter as tk
 from datetime import date, timedelta
 from tkinter import messagebox, ttk
 
+from app.services.auth import AuthenticatedUser
 from app.services.checkin import CheckinService
 from app.services.roadmap import RoadmapService
 from app.services.task import TaskService
 from app.services.team import TeamService
 from app.services.classes import ClassService
 from app.services.validation import validate_roadmap
-from app.ui.charts import show_charts_window
-from app.ui.components import Modal, bind_modal_keys
+from app.ui.charts import show_reports_window
+from app.ui.components import Button, Modal, bind_modal_keys
 from app.ui.dashboard_base import DashboardBase
 from app.ui.forms import CommentForm, TaskForm
 from app.ui.student import (
@@ -21,6 +22,18 @@ from app.ui.student import (
     StudentStatsRow,
     TaskSection,
 )
+from app.design_system.typography import Typography
+from app.ui.vm.helpers import (
+    Choice,
+    Notifier,
+    map_choices,
+    resolve_selected,
+    set_table_with_placeholder,
+    validate_or_warn,
+)
+
+
+FONT_FAMILY = Typography.primary_font_family()
 
 
 class StudentDashboard(DashboardBase):
@@ -32,21 +45,33 @@ class StudentDashboard(DashboardBase):
         team_service: TeamService,
         roadmap_service: RoadmapService,
         task_service: TaskService,
+        current_user: AuthenticatedUser,
+        demo_mode: bool,
         on_back,
     ) -> None:
         self.current_team_id: int | None = None
         self.current_roadmap_id: int | None = None
         self.current_roadmap_status: str | None = None
-        self.active_student_id: int | None = None
+        self.active_student_id: int | None = current_user.id
+        self.current_user = current_user
+        self.demo_mode = demo_mode
+        self.notifier = Notifier()
         self.class_service = class_service
         self.checkin_service = checkin_service
         self.team_service = team_service
         self.roadmap_service = roadmap_service
         self.task_service = task_service
+        self.student_choices: dict[str, Choice] = {}
+        self.team_choices: dict[str, Choice] = {}
+        self.member_choices: dict[str, Choice] = {}
 
         super().__init__(master, "Student Workspace", on_back)
 
+        if self.demo_mode:
+            self.add_demo_button()
         self._refresh_students()
+        self._refresh_invitations()
+        self._refresh_teams()
 
     def build_layout(self) -> None:
         content = self.shell.content
@@ -69,6 +94,7 @@ class StudentDashboard(DashboardBase):
             self._delete_task,
             self._submit_roadmap,
             self._show_charts,
+            show_student_selector=False,
         )
         self.roadmap_section.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
 
@@ -96,12 +122,20 @@ class StudentDashboard(DashboardBase):
             if self.active_student_id
             else []
         )
-        self.team_choices = {}
+        choice_objs = []
         for team in teams:
             principal = team.get("principal_name") or "Unassigned"
-            label = f"{team['id']} {team['name']} · Principal: {principal}"
-            self.team_choices[label] = team["id"]
-        self.roadmap_section.set_team_choices(list(self.team_choices.keys()))
+            label = f"{team['name']} · Principal: {principal}"
+            choice_objs.append(
+                Choice(
+                    id=team["id"],
+                    label=label,
+                    extra={"principal": principal, "name": team["name"]},
+                )
+            )
+        labels, mapping = map_choices(choice_objs)
+        self.team_choices = mapping
+        self.roadmap_section.set_team_choices(labels)
         if self.team_choices:
             self.roadmap_section.team_select.current(0)
             self._load_roadmap()
@@ -117,23 +151,13 @@ class StudentDashboard(DashboardBase):
             self.checkins_section.set_progress(0, 0, 0)
 
     def _refresh_students(self) -> None:
-        students = self.class_service.list_users(role="student")
-        choices = [f"{s['id']} {s['name']}" for s in students]
-        self.roadmap_section.set_student_choices(choices)
-        if not choices:
-            self.active_student_id = None
-            self.roadmap_section.set_invite_rows([])
-            self.roadmap_section.set_team_choices([])
-            return
-        if not self.roadmap_section.selected_student():
-            self.roadmap_section.student_select.current(0)
-            self._set_active_student()
+        self.active_student_id = self.current_user.id
+        label = f"{self.current_user.name} (#{self.current_user.id})"
+        self.student_choices = {label: Choice(id=self.current_user.id, label=label)}
+        self.roadmap_section.set_student_choices([label])
 
     def _set_active_student(self) -> None:
-        selection = self.roadmap_section.selected_student()
-        if not selection:
-            return
-        self.active_student_id = int(selection.split(" ", 1)[0])
+        self.active_student_id = self.current_user.id
         self._refresh_invitations()
         self._refresh_teams()
 
@@ -166,7 +190,11 @@ class StudentDashboard(DashboardBase):
         selection = self.roadmap_section.selected_team()
         if not selection:
             return
-        self.current_team_id = self.team_choices[selection]
+        choice = self.team_choices.get(selection)
+        if not choice:
+            self.notifier.warn("Selected team is unavailable.")
+            return
+        self.current_team_id = choice.id
         self._show_team_details()
         roadmap = self.roadmap_service.get_latest_roadmap(self.current_team_id)
         if roadmap:
@@ -291,7 +319,7 @@ class StudentDashboard(DashboardBase):
 
     def _refresh_task_list(self) -> None:
         if not self.current_roadmap_id:
-            self.task_section.set_task_rows([])
+            set_table_with_placeholder(self.task_section.task_table, [], "No tasks")
             return
         self.tasks_cache = self.task_service.list_tasks_for_roadmap(
             self.current_roadmap_id
@@ -299,17 +327,21 @@ class StudentDashboard(DashboardBase):
         rows = [
             (t["id"], t["title"], t["status"], t["weight"]) for t in self.tasks_cache
         ]
-        self.task_section.set_task_rows(rows)
+        set_table_with_placeholder(self.task_section.task_table, rows, "No tasks")
         self._refresh_progress()
         self._refresh_stats()
 
     def _refresh_comments(self) -> None:
         if not self.current_roadmap_id:
-            self.comments_section.set_comment_rows([])
+            set_table_with_placeholder(
+                self.comments_section.comment_table, [], "No comments"
+            )
             return
         comments = self.roadmap_service.list_roadmap_comments(self.current_roadmap_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
-        self.comments_section.set_comment_rows(rows)
+        set_table_with_placeholder(
+            self.comments_section.comment_table, rows, "No comments"
+        )
 
     def _refresh_checkins(self) -> None:
         if not self.current_team_id:
@@ -321,7 +353,7 @@ class StudentDashboard(DashboardBase):
                 c["id"],
                 f"{c['week_start']} → {c['week_end']}",
                 c["status"],
-                f"{c['percent']}%",
+                f"{c.get('metrics_percent', c.get('percent', 0))}%",
                 c["submitted_at"],
             )
             for c in checkins
@@ -351,18 +383,19 @@ class StudentDashboard(DashboardBase):
     def _add_update(self) -> None:
         task_id = self._selected_task_id()
         if not task_id:
-            messagebox.showwarning("No task", "Select a task first.")
+            self.notifier.warn("Select a task first.", "No task")
             return
-        selection = self.task_section.selected_member_label()
-        if not selection:
-            messagebox.showwarning("No member", "Select a member for this update.")
+        if not self.active_student_id:
+            self.notifier.warn("No active user.", "Not authenticated")
+            return
+        if not self._current_user_is_team_member():
+            self.notifier.warn("You are not a member of this team.", "Access denied")
             return
         text = self.task_section.get_update_text()
         if not text:
-            messagebox.showwarning("Missing data", "Enter an update note.")
+            self.notifier.warn("Enter an update note.", "Missing data")
             return
-        user_id = int(selection.split(" ", 1)[0])
-        self.task_service.add_update(task_id, user_id, text)
+        self.task_service.add_update(task_id, self.active_student_id, text)
         self.task_section.clear_update_text()
         self._refresh_updates()
 
@@ -412,21 +445,18 @@ class StudentDashboard(DashboardBase):
 
     def _add_comment(self) -> None:
         if not self.current_roadmap_id:
-            messagebox.showwarning("No roadmap", "Create a roadmap first.")
+            self.notifier.warn("Create a roadmap first.", "No roadmap")
             return
-        selection = self.task_section.selected_member_label()
-        if not selection:
-            messagebox.showwarning("No member", "Select a member for this comment.")
+        if not self._current_user_is_team_member():
+            self.notifier.warn("You are not a member of this team.", "Access denied")
             return
-        user_name = selection.split(" ", 1)[1]
+        user_name = self.current_user.name
         modal = Modal(self, "Add Comment")
         form = CommentForm()
         form.render(modal.body)
 
         def save() -> None:
-            errors = form.validate()
-            if errors:
-                messagebox.showwarning("Invalid data", "\n".join(errors))
+            if not validate_or_warn(form.validate(), self.notifier):
                 return
             text = form.get_data()["text"]
             self.roadmap_service.add_roadmap_comment(
@@ -436,10 +466,10 @@ class StudentDashboard(DashboardBase):
             self._refresh_comments()
 
         bind_modal_keys(modal, save)
-        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+        Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
-        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+        Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
 
     def _refresh_updates(self) -> None:
         task_id = self._selected_task_id()
@@ -455,10 +485,23 @@ class StudentDashboard(DashboardBase):
         if not self.current_team_id:
             return
         members = self.team_service.list_team_members(self.current_team_id)
-        choices = [f"{m['id']} {m['name']}" for m in members]
-        self.task_section.set_member_choices(choices)
-        if choices:
+        is_member = any(m["id"] == self.current_user.id for m in members)
+        if is_member:
+            label = f"{self.current_user.name} (#{self.current_user.id})"
+            labels = [label]
+            self.member_choices = {label: Choice(id=self.current_user.id, label=label)}
+        else:
+            labels = []
+            self.member_choices = {}
+        self.task_section.set_member_choices(labels)
+        if labels:
             self.task_section.member_select.current(0)
+
+    def _current_user_is_team_member(self) -> bool:
+        if not self.current_team_id:
+            return False
+        members = self.team_service.list_team_members(self.current_team_id)
+        return any(m["id"] == self.current_user.id for m in members)
 
     def _refresh_stats(self) -> None:
         status = self.current_roadmap_status or "-"
@@ -504,7 +547,7 @@ class StudentDashboard(DashboardBase):
         tk.Label(self.drawer.body, text=f"Status: {row['status']}").pack(anchor="w")
         tk.Label(self.drawer.body, text=f"Weight: {row['weight']}").pack(anchor="w")
         tk.Label(
-            self.drawer.body, text="Recent Updates", font=("Segoe UI", 10, "bold")
+            self.drawer.body, text="Recent Updates", font=(FONT_FAMILY, 10, "bold")
         ).pack(anchor="w", pady=(10, 4))
         if not updates:
             tk.Label(self.drawer.body, text="No updates yet").pack(anchor="w")
@@ -545,10 +588,10 @@ class StudentDashboard(DashboardBase):
             self._refresh_roadmap_tree()
 
         bind_modal_keys(modal, save)
-        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+        Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
-        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+        Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
 
     def _delete_phase(self) -> None:
         phase_id = self._selected_phase_id()
@@ -588,10 +631,10 @@ class StudentDashboard(DashboardBase):
             self._refresh_task_list()
 
         bind_modal_keys(modal, save)
-        tk.Button(modal.actions, text="Cancel", command=modal.destroy).pack(
+        Button(modal.actions, text="Cancel", command=modal.destroy).pack(
             side="right", padx=4
         )
-        tk.Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+        Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
 
     def _delete_task(self) -> None:
         task_id = self._selected_task_id()
@@ -615,9 +658,13 @@ class StudentDashboard(DashboardBase):
             else None
         )
         principal = team.get("principal_name") if team else None
-        title = "Team Charts"
-        if team:
-            title = f"{team['name']} Charts"
+        team_name = team.get("name") if team else "Team"
+        title = f"{team_name} Charts" if team else "Team Charts"
         if principal:
             title = f"{title} · Principal: {principal}"
-        show_charts_window(self, title, tasks)
+        checkins = (
+            self.checkin_service.list_checkins_for_team(self.current_team_id)
+            if self.current_team_id
+            else []
+        )
+        show_reports_window(self, title, team_name, tasks, checkins)

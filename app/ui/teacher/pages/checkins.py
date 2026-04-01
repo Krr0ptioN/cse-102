@@ -1,0 +1,144 @@
+from __future__ import annotations
+
+import tkinter as tk
+from tkinter import messagebox
+
+from app.ui.components import Button, Modal, Section, bind_modal_keys
+from app.ui.forms import ApprovalNoteForm, CommentForm
+from app.ui.teacher import CheckinsSection
+
+
+class TeacherCheckinsPage(tk.Frame):
+    title = "Check-ins"
+
+    def __init__(self, master, services: dict, class_id: int | None) -> None:
+        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
+        super().__init__(master, bg=colors_bg)
+        self.services = services
+        self.class_id = class_id
+
+        self._build()
+        self._refresh_checkins()
+
+    def _build(self) -> None:
+        self.section = CheckinsSection(
+            self,
+            self._refresh_checkin_comments,
+            self._add_checkin_comment,
+            self._approve_checkin,
+        )
+        self.section.pack(fill="both", expand=True, padx=8, pady=8)
+
+        # Drawer-like details for checkin summary
+        self.details = Section(self, "Details")
+        self.details.pack(fill="x", padx=8, pady=(0, 8))
+        self.details_body = tk.Label(self.details.body, text="Select a check-in")
+        self.details_body.pack(anchor="w", padx=4, pady=4)
+
+    def _refresh_checkins(self) -> None:
+        if not self.class_id:
+            self.section.set_rows([])
+            return
+        checkins = self.services["checkin"].list_checkins_for_class(self.class_id)
+        rows = [
+            (
+                c["id"],
+                c["team"],
+                f"{c['week_start']} → {c['week_end']}",
+                c["status"],
+                f"{c['percent']}%",
+                c["submitted_at"],
+            )
+            for c in checkins
+        ]
+        self.section.set_rows(rows)
+        self._refresh_checkin_comments()
+        self._show_checkin_details()
+
+    def _selected_checkin_id(self) -> int | None:
+        return self.section.selected_id()
+
+    def _refresh_checkin_comments(self) -> None:
+        checkin_id = self._selected_checkin_id()
+        if not checkin_id:
+            self.section.set_comment_rows([])
+            return
+        comments = self.services["checkin"].list_checkin_comments(checkin_id)
+        rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
+        self.section.set_comment_rows(rows)
+        self._show_checkin_details()
+
+    def _add_checkin_comment(self) -> None:
+        checkin_id = self._selected_checkin_id()
+        if not checkin_id:
+            messagebox.showwarning("No check-in", "Select a check-in first.")
+            return
+        modal = Modal(self, "Add Comment")
+        form = CommentForm()
+        form.render(modal.body)
+
+        def save() -> None:
+            errors = form.validate()
+            if errors:
+                messagebox.showwarning("Invalid data", "\n".join(errors))
+                return
+            text = form.get_data()["text"]
+            self.services["checkin"].add_checkin_comment(
+                checkin_id, "Teacher", text, "comment"
+            )
+            modal.destroy()
+            self._refresh_checkin_comments()
+
+        bind_modal_keys(modal, save)
+        Button(
+            modal.actions, text="Cancel", command=modal.destroy, variant="outline"
+        ).pack(side="right", padx=4)
+        Button(modal.actions, text="Save", command=save, size="sm").pack(
+            side="right", padx=4
+        )
+
+    def _approve_checkin(self) -> None:
+        checkin_id = self._selected_checkin_id()
+        if not checkin_id:
+            messagebox.showwarning("No check-in", "Select a check-in first.")
+            return
+        modal = Modal(self, "Approval Note")
+        form = ApprovalNoteForm()
+        form.render(modal.body)
+
+        def save() -> None:
+            note = form.get_data()["text"]
+            if note:
+                self.services["checkin"].add_checkin_comment(
+                    checkin_id, "Teacher", note, "approval"
+                )
+            if hasattr(self.services["checkin"], "approve_checkin"):
+                self.services["checkin"].approve_checkin(checkin_id)
+            modal.destroy()
+            self._refresh_checkins()
+
+        bind_modal_keys(modal, save)
+        Button(
+            modal.actions, text="Cancel", command=modal.destroy, variant="outline"
+        ).pack(side="right", padx=4)
+        Button(modal.actions, text="Approve", command=save, size="sm").pack(
+            side="right", padx=4
+        )
+
+    def _show_checkin_details(self) -> None:
+        checkin_id = self._selected_checkin_id()
+        if not checkin_id:
+            self.details_body.config(text="Select a check-in")
+            return
+        chk = self.services["checkin"].get_checkin(checkin_id)
+        if not chk:
+            self.details_body.config(text="Select a check-in")
+            return
+        txt = (
+            f"Check-in #{chk['id']}\n"
+            f"Team ID: {chk['team_id']}\n"
+            f"Week: {chk['week_start']} → {chk['week_end']}\n"
+            f"Status: {chk['status']} ({chk['metrics_percent']}%)\n"
+            f"Wins: {chk['wins']}\nRisks: {chk['risks']}\nNext: {chk['next_goal']}\n"
+        )
+        self.details_body.config(text=txt)

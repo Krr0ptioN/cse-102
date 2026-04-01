@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.ui.components import ButtonBar, DataTable, Section
+from app.ui.components import Button, ButtonBar, DataTable, Section
 
 
 class TaskSection(Section):
@@ -15,7 +15,9 @@ class TaskSection(Section):
         self._build()
 
     def _build(self) -> None:
-        self.task_table = DataTable(self.body, ["Id", "Task", "Status", "Weight"], height=7)
+        self.task_table = DataTable(
+            self.body, ["Id", "Task", "Status", "Weight"], height=7
+        )
         self.task_table.pack(fill="both", expand=True, pady=6)
         self.task_table.bind("<<TreeviewSelect>>", lambda _e: self.on_select_task())
 
@@ -32,7 +34,9 @@ class TaskSection(Section):
 
         self.update_text = tk.Text(self.body, height=4)
         self.update_text.pack(fill="x", pady=6)
-        tk.Button(self.body, text="Add Update", command=self.on_add_update).pack(anchor="e")
+        Button(
+            self.body, text="Add Update", command=self.on_add_update, size="sm"
+        ).pack(anchor="e")
 
         self.update_table = DataTable(self.body, ["User", "Update", "Time"], height=6)
         self.update_table.pack(fill="both", expand=True, pady=6)

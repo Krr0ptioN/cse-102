@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.ui.components import Section
+from app.ui.components import Button, Section
 from app.ui.forms import ClassForm
 
 
@@ -15,7 +15,7 @@ class ClassSetupSection(Section):
 
     def _build(self) -> None:
         self.form.render(self.body, columns=2)
-        tk.Button(self.body, text="Create Class", command=self.on_create).grid(
+        Button(self.body, text="Create Class", command=self.on_create, size="sm").grid(
             row=0, column=2, padx=6, pady=16
         )
 

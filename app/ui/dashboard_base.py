@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import tkinter as tk
+from tkinter import messagebox
 
+from app.ui.components.composed import topbar_action
 from app.ui.components import AppShell, TeamDrawer
+from app.ui.shell_factory import resolve_shell
 
 
 class DashboardBase(tk.Frame):
@@ -13,12 +16,22 @@ class DashboardBase(tk.Frame):
     """
 
     def __init__(
-        self, master, title: str, on_back, drawer_title: str = "Details"
+        self,
+        master,
+        title: str,
+        on_back,
+        drawer_title: str = "Details",
+        nav_items: list[tuple[str, str]] | None = None,
+        on_nav=None,
+        shell_cls=None,
     ) -> None:
         super().__init__(master)
         self.on_back = on_back
 
-        self.shell = AppShell(self, title, on_back)
+        shell_class = shell_cls or resolve_shell()
+        self.shell = shell_class(
+            self, title, on_back, nav_items=nav_items, on_nav=on_nav
+        )
         self.shell.pack(fill="both", expand=True)
 
         # Drawer is available for subclasses to populate.
@@ -51,10 +64,25 @@ class DashboardBase(tk.Frame):
             row=row, column=column, rowspan=rowspan, sticky="nsew", padx=padx, pady=pady
         )
 
-    def add_topbar_button(self, text: str, command) -> None:
-        tk.Button(self.shell.topbar.actions, text=text, command=command).pack(
-            side="left", padx=6
+    def add_topbar_button(self, text: str, command, side: str = "left") -> None:
+        topbar_action(self.shell.topbar.actions, text=text, command=command, side=side)
+
+    def add_demo_button(self) -> None:
+        self.add_topbar_button("Demo", self._show_demo_notice, side="right")
+
+    def _show_demo_notice(self) -> None:
+        messagebox.showinfo(
+            "Demo Dataset",
+            "You are currently viewing mock/demo data initialized at startup.",
         )
+
+    def swap_content(self, frame: tk.Frame) -> None:
+        """Replace current content with provided frame."""
+        for child in self.shell.content.winfo_children():
+            if child is frame:
+                continue
+            child.destroy()
+        frame.pack(fill="both", expand=True)
 
     # ----- Template methods -----------------------------------------------
     def build_layout(

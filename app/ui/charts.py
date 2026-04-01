@@ -7,6 +7,11 @@ import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+from app.design_system.typography import Typography
+
+
+FONT_FAMILY = Typography.primary_font_family()
+
 
 sns.set_theme(style="whitegrid")
 
@@ -102,7 +107,7 @@ def show_reports_window(
 
     header = tk.Frame(window)
     header.pack(fill="x", padx=12, pady=10)
-    tk.Label(header, text=title, font=("Segoe UI", 14, "bold")).pack(anchor="w")
+    tk.Label(header, text=title, font=(FONT_FAMILY, 14, "bold")).pack(anchor="w")
     tk.Label(header, text=f"Team: {team_name}").pack(anchor="w")
 
     gantt_fig = build_gantt_figure(tasks)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.ui.components import ButtonBar, LabeledCombobox, LabeledEntry, Section
+from app.ui.components import Button, ButtonBar, LabeledCombobox, LabeledEntry, Section
 from app.ui.forms import TaskForm
 
 
@@ -23,8 +23,11 @@ class RoadmapBuilderSection(Section):
         on_delete_task,
         on_submit,
         on_charts,
+        show_student_selector: bool = True,
     ) -> None:
         super().__init__(master, "Roadmap Builder")
+        self.show_student_selector = show_student_selector
+        self.student_select: ttk.Combobox | None = None
         self._callbacks = {
             "student_change": on_student_change,
             "invite_accept": on_invite_accept,
@@ -43,17 +46,22 @@ class RoadmapBuilderSection(Section):
         self._build()
 
     def _build(self) -> None:
-        student_row = tk.Frame(self.body)
-        student_row.pack(fill="x", pady=4)
-        student_field = LabeledCombobox(student_row, "Student", width=28)
-        student_field.pack(side="left", padx=4)
-        self.student_select = student_field.combo
-        self.student_select.bind("<<ComboboxSelected>>", lambda _e: self._callbacks["student_change"]())
+        if self.show_student_selector:
+            student_row = tk.Frame(self.body)
+            student_row.pack(fill="x", pady=4)
+            student_field = LabeledCombobox(student_row, "Student", width=28)
+            student_field.pack(side="left", padx=4)
+            self.student_select = student_field.combo
+            self.student_select.bind(
+                "<<ComboboxSelected>>", lambda _e: self._callbacks["student_change"]()
+            )
 
         invite_block = tk.Frame(self.body)
         invite_block.pack(fill="x", pady=4)
         tk.Label(invite_block, text="Invitations").pack(anchor="w")
-        self.invite_table = ttk.Treeview(invite_block, columns=("Id", "Team", "Status"), show="headings", height=3)
+        self.invite_table = ttk.Treeview(
+            invite_block, columns=("Id", "Team", "Status"), show="headings", height=3
+        )
         for col in ("Id", "Team", "Status"):
             self.invite_table.heading(col, text=col)
             self.invite_table.column(col, anchor="w", width=120, stretch=True)
@@ -68,33 +76,35 @@ class RoadmapBuilderSection(Section):
         team_field = LabeledCombobox(selector, "Team", width=34)
         team_field.pack(side="left", padx=4)
         self.team_select = team_field.combo
-        self.team_select.bind("<<ComboboxSelected>>", lambda _e: self._callbacks["team_change"]())
+        self.team_select.bind(
+            "<<ComboboxSelected>>", lambda _e: self._callbacks["team_change"]()
+        )
 
         controls = tk.Frame(self.body)
         controls.pack(fill="x", pady=6)
 
         phase_field = LabeledEntry(controls, "Phase Name", width=20)
         phase_field.grid(row=0, column=0, padx=4, sticky="w")
-        tk.Button(controls, text="Add Phase", command=self._callbacks["add_phase"]).grid(
+        Button(controls, text="Add Phase", command=self._callbacks["add_phase"]).grid(
             row=0, column=1, padx=4, pady=16
         )
-        tk.Button(controls, text="Edit Phase", command=self._callbacks["edit_phase"]).grid(
+        Button(controls, text="Edit Phase", command=self._callbacks["edit_phase"]).grid(
             row=0, column=2, padx=4, pady=16
         )
-        tk.Button(controls, text="Delete Phase", command=self._callbacks["delete_phase"]).grid(
-            row=0, column=3, padx=4, pady=16
-        )
+        Button(
+            controls, text="Delete Phase", command=self._callbacks["delete_phase"]
+        ).grid(row=0, column=3, padx=4, pady=16)
 
         self.task_form.render(controls, columns=2, start_row=1)
-        tk.Button(controls, text="Add Task", command=self._callbacks["add_task"]).grid(
+        Button(controls, text="Add Task", command=self._callbacks["add_task"]).grid(
             row=1, column=2, padx=4, pady=16
         )
-        tk.Button(controls, text="Edit Task", command=self._callbacks["edit_task"]).grid(
+        Button(controls, text="Edit Task", command=self._callbacks["edit_task"]).grid(
             row=1, column=3, padx=4, pady=16
         )
-        tk.Button(controls, text="Delete Task", command=self._callbacks["delete_task"]).grid(
-            row=1, column=4, padx=4, pady=16
-        )
+        Button(
+            controls, text="Delete Task", command=self._callbacks["delete_task"]
+        ).grid(row=1, column=4, padx=4, pady=16)
         self.phase_entry = phase_field.entry
 
         action_row = ButtonBar(self.body)
@@ -108,13 +118,14 @@ class RoadmapBuilderSection(Section):
         self.tree.pack(fill="both", expand=True, pady=6)
 
     def set_student_choices(self, values: list[str]) -> None:
-        self.student_select["values"] = values
+        if self.student_select is not None:
+            self.student_select["values"] = values
 
     def set_team_choices(self, values: list[str]) -> None:
         self.team_select["values"] = values
 
     def selected_student(self) -> str:
-        return self.student_select.get()
+        return self.student_select.get() if self.student_select is not None else ""
 
     def selected_team(self) -> str:
         return self.team_select.get()

@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.ui.components import ButtonBar, DataTable, LabeledEntry, Section
+from app.ui.components import ButtonBar, DataTable, Section
 
 
 class TeamSection(Section):
@@ -31,16 +31,6 @@ class TeamSection(Section):
         self._build()
 
     def _build(self) -> None:
-        form = tk.Frame(self.body)
-        form.pack(fill="x", pady=6)
-
-        team_field = LabeledEntry(form, "Team Name", width=22)
-        team_field.grid(row=0, column=0, padx=4, pady=4, sticky="w")
-        tk.Button(form, text="Create Team", command=self.on_create).grid(
-            row=0, column=1, padx=6, pady=16
-        )
-        self.team_name_entry = team_field.entry
-
         tables = tk.Frame(self.body)
         tables.pack(fill="both", expand=True)
         tables.grid_columnconfigure(0, weight=1)
@@ -50,11 +40,15 @@ class TeamSection(Section):
         self.team_table.grid(row=0, column=0, sticky="nsew", padx=4, pady=6)
         self.team_table.bind("<<TreeviewSelect>>", lambda _e: self.on_team_select())
 
-        self.member_table = DataTable(tables, ["Id", "Member", "Email", "Role"], height=6)
+        self.member_table = DataTable(
+            tables, ["Id", "Member", "Email", "Role"], height=6
+        )
         self.member_table.grid(row=0, column=1, sticky="nsew", padx=4, pady=6)
 
         actions = ButtonBar(self.body)
         actions.pack(fill="x", pady=6)
+
+        actions.add("Create Team", self.on_create)
 
         self.member_select = ttk.Combobox(actions, state="readonly")
         self.member_select.pack(side="left", padx=4)
@@ -76,14 +70,10 @@ class TeamSection(Section):
         invite_block = tk.Frame(self.body)
         invite_block.pack(fill="both", expand=True, pady=6)
         tk.Label(invite_block, text="Invitations").pack(anchor="w")
-        self.invite_table = DataTable(invite_block, ["Id", "Student", "Status"], height=4)
+        self.invite_table = DataTable(
+            invite_block, ["Id", "Student", "Status"], height=4
+        )
         self.invite_table.pack(fill="both", expand=True, pady=4)
-
-    def get_team_name(self) -> str:
-        return self.team_name_entry.get().strip()
-
-    def clear_team_name(self) -> None:
-        self.team_name_entry.delete(0, tk.END)
 
     def set_team_rows(self, rows: list[tuple]) -> None:
         self.team_table.set_rows(rows)
@@ -102,13 +92,24 @@ class TeamSection(Section):
         selection = self.team_table.selection()
         if not selection:
             return None
-        return int(self.team_table.item(selection[0], "values")[0])
+        raw = self.team_table.item(selection[0], "values")[0]
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
 
     def selected_team_row(self) -> tuple | None:
         selection = self.team_table.selection()
         if not selection:
             return None
-        return self.team_table.item(selection[0], "values")
+        row = self.team_table.item(selection[0], "values")
+        if not row:
+            return None
+        try:
+            int(row[0])
+        except (TypeError, ValueError):
+            return None
+        return row
 
     def selected_member_id(self) -> int | None:
         selection = self.member_table.selection()
