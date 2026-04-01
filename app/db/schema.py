@@ -7,13 +7,25 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT UNIQUE,
-    role TEXT NOT NULL
+    role TEXT NOT NULL,
+    password_hash TEXT,
+    password_salt TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT,
+    last_login_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS classes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    term TEXT NOT NULL
+    term TEXT NOT NULL,
+    owner_user_id INTEGER,
+    FOREIGN KEY(owner_user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS app_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS teams (
@@ -126,6 +138,9 @@ def init_db(db_path: str) -> None:
     with db.transaction() as conn:
         conn.executescript(SCHEMA_SQL)
         _ensure_team_member_role(conn)
+        _ensure_user_auth_columns(conn)
+        _ensure_classes_owner_user_id(conn)
+        _ensure_app_metadata(conn)
 
 
 def _ensure_team_member_role(conn) -> None:
@@ -134,3 +149,41 @@ def _ensure_team_member_role(conn) -> None:
         conn.execute(
             "ALTER TABLE team_members ADD COLUMN role TEXT NOT NULL DEFAULT 'Member'"
         )
+
+
+def _ensure_user_auth_columns(conn) -> None:
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
+    if "password_hash" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+    if "password_salt" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN password_salt TEXT")
+    if "is_active" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"
+        )
+    if "created_at" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN created_at TEXT")
+    conn.execute(
+        "UPDATE users SET created_at = datetime('now') WHERE created_at IS NULL"
+    )
+    if "last_login_at" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN last_login_at TEXT")
+
+
+def _ensure_classes_owner_user_id(conn) -> None:
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(classes)")}
+    if "owner_user_id" not in cols:
+        conn.execute(
+            "ALTER TABLE classes ADD COLUMN owner_user_id INTEGER REFERENCES users(id)"
+        )
+
+
+def _ensure_app_metadata(conn) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS app_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+        """
+    )
