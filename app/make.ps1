@@ -12,29 +12,46 @@ if ([string]::IsNullOrWhiteSpace($ScriptDir)) {
     $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 }
 
+$script:PythonLauncher = ""
+
 function Show-Usage {
     Write-Host "Usage: .\make.ps1 <task> [-NoReset]"
     Write-Host ""
     Write-Host "Tasks:"
-    Write-Host "  setup       Create .venv and install runtime dependencies"
-    Write-Host "  install-dev Create .venv and install runtime + dev dependencies"
-    Write-Host "  run         Launch the Tkinter app"
-    Write-Host "  test        Run pytest"
-    Write-Host "  db-setup    Initialize database schema"
-    Write-Host "  seed        Seed mock data (resets DB by default)"
-    Write-Host "  db-status   Print row counts for all tables"
-    Write-Host "  clean       Remove .venv and __pycache__ directories"
-    Write-Host "  help        Show this help message"
+    Write-Host "  setup         Create .venv and install runtime dependencies"
+    Write-Host "  install-dev   Install runtime + dev dependencies"
+    Write-Host "  install-build Install runtime + build dependencies"
+    Write-Host "  run           Launch the Tkinter app"
+    Write-Host "  test          Run pytest"
+    Write-Host "  db-setup      Initialize database schema"
+    Write-Host "  seed          Seed mock data (resets DB by default)"
+    Write-Host "  db-status     Print row counts for all tables"
+    Write-Host "  compile       Build standalone binary with PyInstaller"
+    Write-Host "  clean         Remove .venv and __pycache__ directories"
+    Write-Host "  help          Show this help message"
     Write-Host ""
     Write-Host "Examples:"
     Write-Host "  .\make.ps1 setup"
     Write-Host "  .\make.ps1 run"
     Write-Host "  .\make.ps1 seed -NoReset"
+    Write-Host "  .\make.ps1 compile"
 }
 
-function Assert-Uv {
-    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-        throw "uv is required but was not found in PATH. Install it from https://docs.astral.sh/uv/."
+function Resolve-PythonLauncher {
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        return "py"
+    }
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+        return "python"
+    }
+    throw "Python 3.11+ is required but was not found in PATH."
+}
+
+function Assert-Python {
+    $script:PythonLauncher = Resolve-PythonLauncher
+    & $script:PythonLauncher --version
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to execute Python launcher '$script:PythonLauncher'."
     }
 }
 
@@ -45,13 +62,15 @@ function Get-VenvPython {
     return Join-Path $ScriptDir ".venv/bin/python"
 }
 
-function Invoke-Uv {
+function Invoke-Strict {
     param(
         [Parameter(Mandatory = $true)]
-        [string[]]$UvArgs
+        [string]$Executable,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
     )
 
-    & uv @UvArgs
+    & $Executable @Arguments
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
@@ -65,7 +84,7 @@ function Assert-Venv {
     return $venvPython
 }
 
-function Invoke-AppCommand {
+function Invoke-InVenv {
     param(
         [Parameter(Mandatory = $true)]
         [string[]]$CommandArgs
@@ -75,8 +94,7 @@ function Invoke-AppCommand {
     $previousPythonPath = $env:PYTHONPATH
     $env:PYTHONPATH = ".."
     try {
-        $uvArgs = @("run", "--python", $venvPython) + $CommandArgs
-        Invoke-Uv -UvArgs $uvArgs
+        Invoke-Strict -Executable $venvPython -Arguments $CommandArgs
     }
     finally {
         if ($null -eq $previousPythonPath) {
@@ -89,15 +107,41 @@ function Invoke-AppCommand {
 }
 
 function Install-Dependencies {
-    param([switch]$IncludeDev)
+    param(
+        [switch]$IncludeDev,
+        [switch]$IncludeBuild
+    )
 
-    Invoke-Uv -UvArgs @("venv", ".venv")
+    Invoke-Strict -Executable $script:PythonLauncher -Arguments @("-m", "venv", ".venv")
     $venvPython = Get-VenvPython
-    Invoke-Uv -UvArgs @("pip", "install", "--python", $venvPython, "-r", "requirements.txt")
+
+    Invoke-Strict -Executable $venvPython -Arguments @(
+        "-m", "pip", "install", "-r", "requirements.txt"
+    )
 
     if ($IncludeDev) {
-        Invoke-Uv -UvArgs @("pip", "install", "--python", $venvPython, "-r", "requirements-dev.txt")
+        Invoke-Strict -Executable $venvPython -Arguments @(
+            "-m", "pip", "install", "-r", "requirements-dev.txt"
+        )
     }
+
+    if ($IncludeBuild) {
+        Invoke-Strict -Executable $venvPython -Arguments @(
+            "-m", "pip", "install", "-r", "requirements-build.txt"
+        )
+    }
+}
+
+function Ensure-BuildDependencies {
+    if (-not (Test-Path (Get-VenvPython))) {
+        Install-Dependencies -IncludeBuild
+        return
+    }
+
+    $venvPython = Get-VenvPython
+    Invoke-Strict -Executable $venvPython -Arguments @(
+        "-m", "pip", "install", "-r", "requirements-build.txt"
+    )
 }
 
 function Clean-Workspace {
@@ -112,7 +156,7 @@ function Clean-Workspace {
 
 Push-Location $ScriptDir
 try {
-    Assert-Uv
+    Assert-Python
 
     switch ($Task.ToLowerInvariant()) {
         "setup" {
@@ -123,28 +167,37 @@ try {
             Install-Dependencies -IncludeDev
             break
         }
+        "install-build" {
+            Install-Dependencies -IncludeBuild
+            break
+        }
         "run" {
-            Invoke-AppCommand -CommandArgs @("python", "-m", "app.main")
+            Invoke-InVenv -CommandArgs @("-m", "app.main")
             break
         }
         "test" {
-            Invoke-AppCommand -CommandArgs @("pytest")
+            Invoke-InVenv -CommandArgs @("-m", "pytest")
             break
         }
         "db-setup" {
-            Invoke-AppCommand -CommandArgs @("python", "scripts/init_db.py")
+            Invoke-InVenv -CommandArgs @("scripts/init_db.py")
             break
         }
         "seed" {
-            $seedArgs = @("python", "scripts/seed_mock_data.py")
+            $seedArgs = @("scripts/seed_mock_data.py")
             if (-not $NoReset) {
                 $seedArgs += "--reset"
             }
-            Invoke-AppCommand -CommandArgs $seedArgs
+            Invoke-InVenv -CommandArgs $seedArgs
             break
         }
         "db-status" {
-            Invoke-AppCommand -CommandArgs @("python", "scripts/db_status.py")
+            Invoke-InVenv -CommandArgs @("scripts/db_status.py")
+            break
+        }
+        "compile" {
+            Ensure-BuildDependencies
+            Invoke-InVenv -CommandArgs @("scripts/build_release.py", "--clean")
             break
         }
         "clean" {

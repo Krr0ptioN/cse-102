@@ -4,8 +4,8 @@ This directory is the root of the application codebase. All runtime code, tests,
 
 ### Prerequisites
 - Python 3.11+ (Tkinter included; install `python3-tk` via your OS package manager if missing)
-- [uv](https://docs.astral.sh/uv/) (Rust-based Python installer/runner)
-- `make` (optional, for macOS/Linux task shortcuts)
+- Linux/macOS: [uv](https://docs.astral.sh/uv/) + `make` (optional but recommended)
+- Windows: PowerShell + Python launcher (`py` or `python`) (no uv required)
 
 ### Quickstart (macOS/Linux)
 ```bash
@@ -18,7 +18,6 @@ make run                                         # launch the Tkinter app
 ### Quickstart (Windows PowerShell)
 ```powershell
 Set-Location app
-uv --version
 .\make.ps1 setup
 .\make.ps1 run
 ```
@@ -40,10 +39,34 @@ Set-Location app
 - Use the same task names in both wrappers:
   - macOS/Linux: `make <task>`
   - Windows PowerShell: `.\make.ps1 <task>`
-- Tasks: `setup`, `install-dev`, `run`, `test`, `db-setup`, `seed`, `db-status`, `clean`.
+- Tasks: `setup`, `install-dev`, `install-build`, `run`, `test`, `db-setup`, `seed`, `db-status`, `compile`, `clean`.
 - `seed` resets the database by default (`--reset`). In PowerShell, use `.\make.ps1 seed -NoReset` to preserve existing data.
+
+### Build Standalone Binary
+Build on each target OS natively (no cross-compiling Windows from Linux or Linux from Windows):
+
+```bash
+cd app
+make compile
+```
+
+```powershell
+Set-Location app
+.\make.ps1 compile
+```
+
+- Output artifact is created in `app/dist/`.
+- Default name is `CSE102-App` (`CSE102-App.exe` on Windows).
+
+### Local SQLite Storage
+The app now stores user data in OS-local storage and auto-initializes schema on startup:
+
+- Windows: `%LOCALAPPDATA%\CSE102ProjectManager\app.db`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/CSE102ProjectManager/app.db`
+- macOS: `~/Library/Application Support/CSE102ProjectManager/app.db`
+- On first run, the app auto-copies an existing legacy `app.db` (if found) into the new local path.
 
 ### Notes
 - `PYTHONPATH=..` is set in the Makefile so imports like `app.services...` work when running from this directory.
 - The PowerShell script sets the same `PYTHONPATH=..` behavior for Windows.
-- Dependencies are split: runtime in `requirements.txt`, dev-only in `requirements-dev.txt`.
+- Dependencies are split: runtime in `requirements.txt`, dev-only in `requirements-dev.txt`, build-only in `requirements-build.txt`.

@@ -9,6 +9,7 @@ except Exception:  # pragma: no cover - optional dependency
     ctk = None
 
 from app.design_system.tokens import palette
+from app.core.paths import ensure_local_db_path
 from app.db.connector import DBConnector
 from app.db.schema import init_db
 from app.services.auth import AuthenticatedUser
@@ -31,9 +32,9 @@ class AppShell(BaseRoot):
         colors = palette()
         self.configure(bg=colors.bg)
 
-        db_path = "app.db"
-        init_db(db_path)
-        db = DBConnector(db_path)
+        db_path = ensure_local_db_path()
+        init_db(str(db_path))
+        db = DBConnector(str(db_path))
         services = ServiceFactory(db)
 
         self._services = services

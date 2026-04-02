@@ -6,7 +6,7 @@ from app.ui.components.primitives import Button, Card, Input, Label, Select
 
 
 class AuthCard:
-    """Composable auth card for sign-in / sign-up."""
+    """Auth card for sign-in / sign-up."""
 
     def __init__(
         self,
@@ -18,26 +18,26 @@ class AuthCard:
     ) -> None:
         self.frame = Card(master)
 
-        title_text = "Create Account" if sign_up_mode else "Welcome Back"
-        subtitle_text = (
+        self.title_text = "Create Account" if sign_up_mode else "Welcome Back"
+        self.subtitle_text = (
             "Use this form to create your account"
             if sign_up_mode
             else "Sign in to continue"
         )
-        action_text = "Create Account" if sign_up_mode else "Sign In"
-        switch_prompt = (
+        self.action_text = "Create Account" if sign_up_mode else "Sign In"
+        self.switch_prompt = (
             "Already have an account?" if sign_up_mode else "Need an account?"
         )
-        switch_action = "Sign In" if sign_up_mode else "Sign Up"
+        self.switch_action = "Sign In" if sign_up_mode else "Sign Up"
 
-        Label(self.frame, text=title_text, weight="bold").pack(pady=(22, 8), padx=28)
-        Label(self.frame, text=subtitle_text, variant="muted").pack(
+        Label(self.frame, text=self.title_text, weight="bold").pack(pady=(22, 8), padx=28)
+        Label(self.frame, text=self.subtitle_text, variant="muted").pack(
             pady=(0, 14), padx=28
         )
 
         form = Card(self.frame)
         form.pack(fill="x", padx=20, pady=(0, 12))
-        Label(form, text=action_text, weight="bold").pack(
+        Label(form, text=self.action_text, weight="bold").pack(
             anchor="w", padx=12, pady=(10, 6)
         )
 
@@ -64,23 +64,23 @@ class AuthCard:
 
         Button(
             form,
-            text=action_text,
-            command=lambda: on_submit(self.values(sign_up_mode)),
+            text=self.action_text,
+            command=lambda: on_submit(self.__values(sign_up_mode)),
             variant="default",
         ).pack(fill="x", padx=12, pady=(8, 12))
 
         Label(self.frame, text="Click below to switch forms", variant="muted").pack(
             pady=(0, 2)
         )
-        Label(self.frame, text=switch_prompt, variant="muted").pack()
+        Label(self.frame, text=self.switch_prompt, variant="muted").pack()
 
         switch_label = Label(
-            self.frame, text=switch_action, variant="accent", weight="bold"
+            self.frame, text=self.switch_action, variant="accent", weight="bold"
         )
         switch_label.pack(pady=(2, 18))
         switch_label.bind("<Button-1>", lambda _event: on_switch())
 
-    def values(self, sign_up_mode: bool) -> dict[str, str]:
+    def __values(self, sign_up_mode: bool) -> dict[str, str]:
         data = {
             "email": self.email_entry.get().strip(),
             "password": self.password_entry.get(),

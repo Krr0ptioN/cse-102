@@ -15,6 +15,9 @@ app/.sisyphus/
 app/test-impact-plan.json
 app/.python-version
 app/uv.lock
+app/build/
+app/dist/
+app/*.spec
 
 # docs drafts and exports (not ready for commit)
 app/ui/docs/

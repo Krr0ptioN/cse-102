@@ -3,7 +3,7 @@ UV := uv
 UV_RUN := $(UV) run --python .venv/bin/python
 PYTHONPATH := ..
 
-.PHONY: setup install-dev run test db-setup seed db-status clean
+.PHONY: setup install-dev install-build run test db-setup seed db-status compile clean
 
 setup:
 	$(UV) venv .venv
@@ -12,6 +12,10 @@ setup:
 install-dev:
 	$(UV) venv .venv
 	$(UV) pip install -r requirements.txt -r requirements-dev.txt
+
+install-build:
+	$(UV) venv .venv
+	$(UV) pip install -r requirements.txt -r requirements-build.txt
 
 run:
 	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) $(PYTHON) -m app.main
@@ -27,6 +31,9 @@ seed:
 
 db-status:
 	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) python scripts/db_status.py
+
+compile: install-build
+	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) python scripts/build_release.py --clean
 
 clean:
 	rm -rf .venv
