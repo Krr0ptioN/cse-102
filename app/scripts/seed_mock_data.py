@@ -187,7 +187,7 @@ def main() -> None:
     parser.add_argument(
         "--db",
         type=Path,
-        default=Path(__file__).resolve().parents[2] / "app.db",
+        default=Path(__file__).resolve().parents[1] / "app.db",
         help="Path to the SQLite database (default: app/app.db)",
     )
     parser.add_argument(

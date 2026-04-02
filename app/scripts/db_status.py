@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import sqlite3
 import sys
 from pathlib import Path
@@ -25,8 +26,20 @@ TABLES = [
 ]
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Print row counts for all core tables")
+    parser.add_argument(
+        "--db",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "app.db",
+        help="Path to the SQLite database (default: app/app.db)",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    db_path = Path(__file__).resolve().parents[2] / "app.db"
+    args = parse_args()
+    db_path = args.db
     if not db_path.exists():
         print(f"No database found at {db_path}")
         return

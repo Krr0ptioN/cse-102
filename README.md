@@ -7,8 +7,9 @@ Docs and assets stay at the repository root.
 
 ## Getting Started
 
-See `app/README.md` for setup, run, and test instructions (uv + Makefile flow). If you have
-*make* installed, use `make -C app <target>` from the repo root if you prefer not to `cd`.
+See `app/README.md` for setup, run, and test instructions (uv + Makefile/PowerShell flow).
+If you have *make* installed, use `make -C app <target>` from the repo root if you prefer
+not to `cd`. On Windows, run `.\app\make.ps1 <task>` from PowerShell.
 
 Otherwise you can follow the process defined within the application's [documentation](/app/README.md).
 
