@@ -6,6 +6,16 @@ import subprocess
 import sys
 from pathlib import Path
 
+APP_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = APP_ROOT.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app.libs.logger import get_logger
+
+
+logger = get_logger("app.scripts.build_release")
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -44,8 +54,8 @@ def _artifact_path(app_root: Path, name: str, mode: str) -> Path:
 
 
 def build(args: argparse.Namespace) -> Path:
-    app_root = Path(__file__).resolve().parents[1]
-    project_root = app_root.parent
+    app_root = APP_ROOT
+    project_root = PROJECT_ROOT
     entrypoint = app_root / "main.py"
     assets_dir = app_root / "assets"
 
@@ -77,6 +87,9 @@ def build(args: argparse.Namespace) -> Path:
 
     cmd.append(str(entrypoint))
 
+    logger.banner("Build Release")
+    logger.info("Mode=%s Name=%s", args.mode, args.name)
+    logger.info("Running PyInstaller command")
     subprocess.run(cmd, cwd=app_root, check=True)
     return _artifact_path(app_root, args.name, args.mode)
 
@@ -84,7 +97,7 @@ def build(args: argparse.Namespace) -> Path:
 def main() -> None:
     args = parse_args()
     artifact = build(args)
-    print(f"Build complete: {artifact}")
+    logger.success("Build complete: %s", artifact)
 
 
 if __name__ == "__main__":

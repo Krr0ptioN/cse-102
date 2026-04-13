@@ -6,8 +6,8 @@ import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from app.repositories.auth_repository import AuthRepository
-from app.services.base import Service
+from app.core.repositories.auth_repository import AuthRepository
+from app.core.services.base import Service
 
 
 @dataclass(frozen=True)
@@ -28,6 +28,7 @@ class AuthService(Service):
     def sign_up(
         self, name: str, email: str, password: str, role: str
     ) -> AuthenticatedUser:
+        self.log.info("Sign-up attempt for email=%s role=%s", email.strip().lower(), role)
         clean_name = name.strip()
         clean_email = self._normalize_email(email)
         clean_role = role.strip().lower()
@@ -65,6 +66,7 @@ class AuthService(Service):
                 password_salt=password_salt,
                 created_at=now,
             )
+            self.log.success("Existing account claimed for email=%s", clean_email)
             return self.require_user(int(existing["id"]))
 
         user_id = self.repo.create_account(
@@ -75,10 +77,12 @@ class AuthService(Service):
             password_salt=password_salt,
             created_at=now,
         )
+        self.log.success("User created id=%s email=%s role=%s", user_id, clean_email, clean_role)
         return self.require_user(user_id)
 
     def sign_in(self, email: str, password: str) -> AuthenticatedUser:
         clean_email = self._normalize_email(email)
+        self.log.info("Sign-in attempt for email=%s", clean_email)
         if not clean_email or not password:
             raise ValueError("Email and password are required")
 
@@ -97,6 +101,7 @@ class AuthService(Service):
             raise ValueError("Invalid email or password")
 
         self.repo.set_last_login(int(user["id"]), datetime.now(UTC).isoformat())
+        self.log.success("Sign-in success user_id=%s email=%s", int(user["id"]), clean_email)
         return self.require_user(int(user["id"]))
 
     def require_user(self, user_id: int) -> AuthenticatedUser:

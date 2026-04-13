@@ -1,7 +1,7 @@
-from app.db.schema import init_db
-from app.db.connector import DBConnector
-from app.repositories.schema_repository import SchemaRepository
-from app.services.schema import SchemaService
+from app.core.db.schema import init_db
+from app.core.db.connector import DBConnector
+from app.core.repositories.schema_repository import SchemaRepository
+from app.core.services.schema import SchemaService
 
 
 def test_schema_creates_tables(tmp_path):

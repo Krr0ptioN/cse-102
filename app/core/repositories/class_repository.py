@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.repositories.base import Repository
+from app.core.repositories.base import Repository
 
 
 class ClassRepository(Repository):

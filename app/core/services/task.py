@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.repositories.task_repository import TaskRepository
-from app.services.base import Service
+from app.core.repositories.task_repository import TaskRepository
+from app.core.services.base import Service
 
 
 class TaskService(Service):

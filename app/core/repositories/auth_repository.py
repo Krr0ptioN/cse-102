@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.repositories.base import Repository
+from app.core.repositories.base import Repository
 
 
 class AuthRepository(Repository):
@@ -19,6 +19,7 @@ class AuthRepository(Repository):
         }
 
     def find_user_by_email(self, email: str) -> dict | None:
+        self.log.debug("Lookup user by email=%s", email)
         with self.db.connect() as conn:
             row = conn.execute(
                 """
@@ -35,6 +36,7 @@ class AuthRepository(Repository):
         return self._to_user_dict(row)
 
     def find_user_by_id(self, user_id: int) -> dict | None:
+        self.log.debug("Lookup user by id=%s", user_id)
         with self.db.connect() as conn:
             row = conn.execute(
                 """
@@ -60,6 +62,7 @@ class AuthRepository(Repository):
         password_salt: str,
         created_at: str,
     ) -> int:
+        self.log.debug("Create account email=%s role=%s", email, role)
         with self.db.transaction() as conn:
             cur = conn.execute(
                 """
@@ -75,7 +78,9 @@ class AuthRepository(Repository):
                 """,
                 (name, email, role, password_hash, password_salt, created_at),
             )
-            return int(cur.lastrowid)
+            user_id = int(cur.lastrowid)
+            self.log.debug("Created account id=%s email=%s", user_id, email)
+            return user_id
 
     def claim_existing_account(
         self,
@@ -87,6 +92,7 @@ class AuthRepository(Repository):
         password_salt: str,
         created_at: str,
     ) -> None:
+        self.log.debug("Claim existing account user_id=%s role=%s", user_id, role)
         with self.db.transaction() as conn:
             conn.execute(
                 """
@@ -103,6 +109,7 @@ class AuthRepository(Repository):
             )
 
     def set_last_login(self, user_id: int, timestamp: str) -> None:
+        self.log.debug("Update last login user_id=%s", user_id)
         with self.db.transaction() as conn:
             conn.execute(
                 "UPDATE users SET last_login_at = ? WHERE id = ?",

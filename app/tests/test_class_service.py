@@ -1,7 +1,7 @@
-from app.db.schema import init_db
-from app.db.connector import DBConnector
-from app.repositories.class_repository import ClassRepository
-from app.services.classes import ClassService
+from app.core.db.schema import init_db
+from app.core.db.connector import DBConnector
+from app.core.repositories.class_repository import ClassRepository
+from app.core.services.classes import ClassService
 
 
 def test_create_class_and_user(tmp_path):

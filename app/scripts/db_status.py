@@ -6,8 +6,15 @@ import sys
 from pathlib import Path
 
 # Ensure project root is on sys.path
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(ROOT))
+APP_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = APP_ROOT.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app.libs.logger import get_logger
+
+
+logger = get_logger("app.scripts.db_status")
 
 
 TABLES = [
@@ -40,18 +47,19 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     db_path = args.db
+    logger.banner("Database Status")
     if not db_path.exists():
-        print(f"No database found at {db_path}")
+        logger.warning("No database found at %s", db_path)
         return
     conn = sqlite3.connect(db_path)
-    print(f"DB: {db_path}")
+    logger.info("DB: %s", db_path)
     for table in TABLES:
         try:
             count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
         except sqlite3.Error as exc:
-            print(f"{table}: error ({exc})")
+            logger.error("%s: error (%s)", table, exc)
             continue
-        print(f"{table}: {count}")
+        logger.info("%s: %s", table, count)
     conn.close()
 
 

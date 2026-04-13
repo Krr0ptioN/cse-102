@@ -1,4 +1,4 @@
-from app.db.connector import DBConnector
+from app.core.db.connector import DBConnector
 
 
 def test_connection_executes_query(tmp_path):

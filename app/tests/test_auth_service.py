@@ -1,8 +1,8 @@
-from app.db.connector import DBConnector
-from app.db.schema import init_db
-from app.repositories.auth_repository import AuthRepository
-from app.repositories.class_repository import ClassRepository
-from app.services.auth import AuthService
+from app.core.db.connector import DBConnector
+from app.core.db.schema import init_db
+from app.core.repositories.auth_repository import AuthRepository
+from app.core.repositories.class_repository import ClassRepository
+from app.core.services.auth import AuthService
 
 
 def test_sign_up_and_sign_in(tmp_path):
