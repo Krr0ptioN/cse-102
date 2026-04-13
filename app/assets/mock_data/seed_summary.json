@@ -10,42 +10,62 @@
         {
           "team_name": "BME102-Team-01",
           "project": "Congress Registration Managing System",
+          "scenario": "Finished",
           "size": 5,
           "principal_student_id": "221402023",
           "roadmap_id": 1,
-          "checkin_id": 1
+          "roadmap_status": "Approved",
+          "checkin_id": 3,
+          "checkin_count": 3,
+          "progress_percent": 100
         },
         {
           "team_name": "BME102-Team-02",
           "project": "Pharmacy Drug Inventory and Stock Management System",
+          "scenario": "Not Started",
           "size": 4,
           "principal_student_id": "221402602",
           "roadmap_id": 2,
-          "checkin_id": 2
+          "roadmap_status": "Draft",
+          "checkin_id": 6,
+          "checkin_count": 3,
+          "progress_percent": 5
         },
         {
           "team_name": "BME102-Team-03",
           "project": "Car Rental Management System",
+          "scenario": "Linear Progress",
           "size": 4,
           "principal_student_id": "231402015",
           "roadmap_id": 3,
-          "checkin_id": 3
+          "roadmap_status": "Submitted",
+          "checkin_id": 9,
+          "checkin_count": 3,
+          "progress_percent": 45
         },
         {
           "team_name": "BME102-Team-04",
           "project": "Student course registration system",
+          "scenario": "Improving Productivity",
           "size": 4,
           "principal_student_id": "241402005",
           "roadmap_id": 4,
-          "checkin_id": 4
+          "roadmap_status": "Submitted",
+          "checkin_id": 12,
+          "checkin_count": 3,
+          "progress_percent": 55
         },
         {
           "team_name": "BME102-Team-05",
           "project": "Stock Management System",
+          "scenario": "Finished",
           "size": 4,
           "principal_student_id": "241402016",
           "roadmap_id": 5,
-          "checkin_id": 5
+          "roadmap_status": "Approved",
+          "checkin_id": 15,
+          "checkin_count": 3,
+          "progress_percent": 100
         }
       ]
     },
@@ -59,58 +79,86 @@
         {
           "team_name": "CSE102-Team-01",
           "project": "football player scouting and analysis system",
+          "scenario": "Not Started",
           "size": 5,
           "principal_student_id": "241401005",
           "roadmap_id": 6,
-          "checkin_id": 6
+          "roadmap_status": "Draft",
+          "checkin_id": 18,
+          "checkin_count": 3,
+          "progress_percent": 5
         },
         {
           "team_name": "CSE102-Team-02",
           "project": "scRNA Insight - Hucre Tipi Siniflandirma ve QC (Kalite Kontrol) Paneli",
+          "scenario": "Linear Progress",
           "size": 5,
           "principal_student_id": "241401013",
           "roadmap_id": 7,
-          "checkin_id": 7
+          "roadmap_status": "Submitted",
+          "checkin_id": 21,
+          "checkin_count": 3,
+          "progress_percent": 45
         },
         {
           "team_name": "CSE102-Team-03",
           "project": "Smart Clinical Priority System",
+          "scenario": "Improving Productivity",
           "size": 4,
           "principal_student_id": "241401025",
           "roadmap_id": 8,
-          "checkin_id": 8
+          "roadmap_status": "Submitted",
+          "checkin_id": 24,
+          "checkin_count": 3,
+          "progress_percent": 55
         },
         {
           "team_name": "CSE102-Team-04",
           "project": "Psikolojik Danismanlik Merkezleri Icin Danisan ve Randevu Yonetim Sistemi",
+          "scenario": "Finished",
           "size": 4,
           "principal_student_id": "241401031",
           "roadmap_id": 9,
-          "checkin_id": 9
+          "roadmap_status": "Approved",
+          "checkin_id": 27,
+          "checkin_count": 3,
+          "progress_percent": 100
         },
         {
           "team_name": "CSE102-Team-05",
           "project": "Smart Gym & Basic Health Tracker System",
+          "scenario": "Not Started",
           "size": 4,
           "principal_student_id": "251401013",
           "roadmap_id": 10,
-          "checkin_id": 10
+          "roadmap_status": "Draft",
+          "checkin_id": 30,
+          "checkin_count": 3,
+          "progress_percent": 5
         },
         {
           "team_name": "CSE102-Team-06",
           "project": "Dosage and Drug Interaction Calculator",
+          "scenario": "Linear Progress",
           "size": 4,
           "principal_student_id": "251401026",
           "roadmap_id": 11,
-          "checkin_id": 11
+          "roadmap_status": "Submitted",
+          "checkin_id": 33,
+          "checkin_count": 3,
+          "progress_percent": 45
         },
         {
           "team_name": "CSE102-Team-07",
           "project": "Laboratuvar Envanter ve Kit Takip Sistemi",
+          "scenario": "Improving Productivity",
           "size": 4,
           "principal_student_id": "251401036",
           "roadmap_id": 12,
-          "checkin_id": 12
+          "roadmap_status": "Submitted",
+          "checkin_id": 36,
+          "checkin_count": 3,
+          "progress_percent": 55
         }
       ]
     },
@@ -124,21 +172,31 @@
         {
           "team_name": "CSE220-Team-01",
           "project": "Intelligent Bioreactor Monitoring and Decision Support System",
+          "scenario": "Finished",
           "size": 6,
           "principal_student_id": "221401045",
           "roadmap_id": 13,
-          "checkin_id": 13
+          "roadmap_status": "Approved",
+          "checkin_id": 39,
+          "checkin_count": 3,
+          "progress_percent": 100
         }
       ]
     }
   ],
+  "scenario_totals": {
+    "Finished": 4,
+    "Not Started": 3,
+    "Linear Progress": 3,
+    "Improving Productivity": 3
+  },
   "totals": {
     "teachers": 3,
     "students": 57,
     "teams": 13,
     "roadmaps": 13,
     "tasks": 156,
-    "checkins": 13
+    "checkins": 39
   },
   "credentials": {
     "default_password": "MockData2026!",

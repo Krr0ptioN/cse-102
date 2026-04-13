@@ -251,6 +251,157 @@ def _format_title(template: str, project: str) -> str:
     return template.format(project=project).strip()
 
 
+SCENARIO_ORDER = (
+    "finished",
+    "not_started",
+    "linear_progress",
+    "improving_productivity",
+)
+
+SCENARIO_LABELS = {
+    "finished": "Finished",
+    "not_started": "Not Started",
+    "linear_progress": "Linear Progress",
+    "improving_productivity": "Improving Productivity",
+}
+
+
+def _scenario_for_team_index(global_team_index: int) -> str:
+    return SCENARIO_ORDER[(global_team_index - 1) % len(SCENARIO_ORDER)]
+
+
+def _task_completion_plan(task_count: int, scenario: str) -> tuple[int, int]:
+    if task_count <= 0:
+        return 0, 0
+    if scenario == "finished":
+        return task_count, 0
+    if scenario == "not_started":
+        return 0, 0
+    if scenario == "linear_progress":
+        done = max(1, task_count // 3)
+        in_progress = 1 if done < task_count else 0
+        return done, in_progress
+    # improving_productivity
+    done = max(1, (task_count * 2) // 3)
+    in_progress = 1 if done < task_count else 0
+    return done, in_progress
+
+
+def _scenario_percent_timeline(scenario: str) -> list[int]:
+    if scenario == "finished":
+        return [35, 70, 100]
+    if scenario == "not_started":
+        return [0, 0, 5]
+    if scenario == "linear_progress":
+        return [15, 30, 45]
+    return [10, 25, 55]  # improving_productivity
+
+
+def _scenario_checkin_status(scenario: str, week_index: int) -> str:
+    if scenario == "finished":
+        return ["On Track", "On Track", "Approved"][week_index]
+    if scenario == "not_started":
+        return ["Needs Attention", "Needs Attention", "At Risk"][week_index]
+    if scenario == "linear_progress":
+        return ["On Track", "On Track", "On Track"][week_index]
+    return ["Needs Attention", "On Track", "On Track"][week_index]
+
+
+def _scenario_wins_text(scenario: str, project: str, week_index: int) -> str:
+    if scenario == "finished":
+        return [
+            f"{project}: requirements and architecture finalized.",
+            f"{project}: implementation milestones completed on schedule.",
+            f"{project}: validation and handoff package completed.",
+        ][week_index]
+    if scenario == "not_started":
+        return [
+            f"{project}: team assignment and roles clarified.",
+            f"{project}: kickoff meeting held with class mentor.",
+            f"{project}: scope clarified, start blocked by preparation tasks.",
+        ][week_index]
+    if scenario == "linear_progress":
+        return [
+            f"{project}: first implementation tasks completed.",
+            f"{project}: steady progress with consistent delivery cadence.",
+            f"{project}: another phase completed with expected throughput.",
+        ][week_index]
+    return [
+        f"{project}: team recovered from a slow kickoff.",
+        f"{project}: delivery speed improved after process adjustments.",
+        f"{project}: productivity trend is up and phase completion accelerated.",
+    ][week_index]
+
+
+def _scenario_risks_text(scenario: str, week_index: int) -> str:
+    if scenario == "finished":
+        return [
+            "Minor documentation debt.",
+            "Regression risk during final merge.",
+            "No major risk; monitoring release quality.",
+        ][week_index]
+    if scenario == "not_started":
+        return [
+            "Unclear implementation ownership.",
+            "Delayed environment setup.",
+            "Timeline slip risk if execution does not begin this week.",
+        ][week_index]
+    if scenario == "linear_progress":
+        return [
+            "Dependency coordination needed across teammates.",
+            "Review queue can slow completion rate.",
+            "Quality checks must keep pace with delivery.",
+        ][week_index]
+    return [
+        "Initial planning quality was low.",
+        "Increased delivery speed may introduce rework.",
+        "Need to sustain pace without quality drop.",
+    ][week_index]
+
+
+def _scenario_next_goal_text(scenario: str, project: str, week_index: int) -> str:
+    if scenario == "finished":
+        return [
+            f"Complete implementation for {project}.",
+            f"Finish remaining QA activities for {project}.",
+            f"Archive roadmap and share retrospective for {project}.",
+        ][week_index]
+    if scenario == "not_started":
+        return [
+            f"Start first phase implementation for {project}.",
+            f"Move at least one task to in-progress.",
+            f"Deliver first completed task and stabilize cadence.",
+        ][week_index]
+    if scenario == "linear_progress":
+        return [
+            f"Maintain weekly throughput for {project}.",
+            f"Complete next phase with the same cadence.",
+            f"Close open tasks and prepare integration checks.",
+        ][week_index]
+    return [
+        f"Stabilize improved workflow on {project}.",
+        f"Convert in-progress tasks to done faster than prior week.",
+        f"Lock in velocity gains and finalize remaining tasks.",
+    ][week_index]
+
+
+def _scenario_help_needed(scenario: str, week_index: int) -> str | None:
+    if scenario == "finished":
+        return None if week_index == 2 else "Final review feedback from teacher."
+    if scenario == "not_started":
+        return "Guidance on prioritizing startup tasks and execution plan."
+    if scenario == "linear_progress":
+        return "Occasional review support on intermediate deliverables."
+    return "Support on quality gates while throughput is increasing."
+
+
+def _metrics_from_percent(total_weight: int, percent: int) -> dict[str, int]:
+    percent_clamped = max(0, min(100, percent))
+    done = int(round((total_weight * percent_clamped) / 100)) if total_weight else 0
+    done = max(0, min(total_weight, done))
+    return {"total": total_weight, "done": done, "percent": percent_clamped}
+
+
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
@@ -315,6 +466,7 @@ def _render_final_report(
     credentials_json_path: Path,
 ) -> str:
     totals = summary.get("totals", {})
+    scenario_totals = summary.get("scenario_totals", {})
     quick_login = credentials.get("quick_login", {})
     quick_teacher = quick_login.get("teacher") or {}
     quick_student = quick_login.get("student") or {}
@@ -337,6 +489,18 @@ def _render_final_report(
     lines.append(f"- Roadmaps: **{totals.get('roadmaps', 0)}**")
     lines.append(f"- Tasks: **{totals.get('tasks', 0)}**")
     lines.append(f"- Check-ins: **{totals.get('checkins', 0)}**")
+    lines.append("")
+    lines.append("## Scenario Coverage")
+    lines.append("")
+    lines.append("| Scenario | Teams |")
+    lines.append("| --- | ---: |")
+    for scenario in (
+        "Finished",
+        "Not Started",
+        "Linear Progress",
+        "Improving Productivity",
+    ):
+        lines.append(f"| {scenario} | {int(scenario_totals.get(scenario, 0))} |")
     lines.append("")
     lines.append("## Quick Login")
     lines.append("")
@@ -497,6 +661,7 @@ def seed_dataset(
     global_team_idx = 0
     summary: dict[str, Any] = {
         "classes": [],
+        "scenario_totals": {label: 0 for label in SCENARIO_LABELS.values()},
         "totals": {
             "teachers": len(teacher_accounts),
             "students": len(students),
@@ -532,6 +697,8 @@ def seed_dataset(
             project = str(projects[global_project_idx % len(projects)]).strip()
             global_project_idx += 1
             team_name = f"{code}-Team-{team_index:02d}"
+            scenario_key = _scenario_for_team_index(global_team_idx)
+            scenario_label = SCENARIO_LABELS[scenario_key]
 
             principal = members[0]
             if principal.user_id is None:
@@ -549,6 +716,7 @@ def seed_dataset(
 
             roadmap_id = services.roadmap_service.create_roadmap(team_id)
             created_task_ids: list[int] = []
+            task_weights: list[int] = []
 
             for phase_index, phase in enumerate(phases, start=1):
                 phase_name = _format_title(str(phase["name"]), project)
@@ -570,72 +738,134 @@ def seed_dataset(
                         assignee_user_id=assignee.user_id,
                     )
                     created_task_ids.append(task_id)
+                    task_weights.append(weight)
 
-            if created_task_ids:
-                services.task_service.update_task_status(created_task_ids[0], "Done")
+            done_count, in_progress_count = _task_completion_plan(
+                len(created_task_ids), scenario_key
+            )
+            done_task_ids = created_task_ids[:done_count]
+            in_progress_task_ids = created_task_ids[
+                done_count : done_count + in_progress_count
+            ]
+
+            for idx, task_id in enumerate(done_task_ids, start=1):
+                member = members[(idx - 1) % len(members)]
+                services.task_service.update_task_status(task_id, "Done")
+                done_note = {
+                    "finished": f"{project} deliverable #{idx} completed and documented.",
+                    "linear_progress": f"{project} task #{idx} completed as planned.",
+                    "improving_productivity": (
+                        f"{project} task #{idx} completed faster than prior sprint."
+                    ),
+                    "not_started": f"{project} task #{idx} completed.",
+                }[scenario_key]
                 services.task_service.add_update(
-                    created_task_ids[0],
-                    members[0].user_id or 0,
-                    f"{project} requirement baseline completed.",
+                    task_id,
+                    member.user_id or 0,
+                    done_note,
                 )
-            if len(created_task_ids) > 1:
+
+            for idx, task_id in enumerate(in_progress_task_ids, start=1):
+                member = members[(done_count + idx - 1) % len(members)]
                 services.task_service.update_task_status(
-                    created_task_ids[1], "In Progress"
+                    task_id, "In Progress"
                 )
+                in_progress_note = {
+                    "linear_progress": (
+                        f"{project} implementation is moving steadily with expected velocity."
+                    ),
+                    "improving_productivity": (
+                        f"{project} execution picked up this week after process tuning."
+                    ),
+                    "finished": f"{project} wrap-up task is in final review.",
+                    "not_started": f"{project} kickoff task moved to in progress.",
+                }[scenario_key]
                 services.task_service.add_update(
-                    created_task_ids[1],
-                    members[1 % len(members)].user_id or 0,
-                    f"{project} architecture draft is under review.",
+                    task_id,
+                    member.user_id or 0,
+                    in_progress_note,
                 )
 
-            if global_team_idx % 2 == 0:
+            if scenario_key in {"finished", "linear_progress", "improving_productivity"}:
                 services.roadmap_service.submit_roadmap(roadmap_id)
-            if global_team_idx % 4 == 0:
+            if scenario_key == "finished":
                 services.roadmap_service.approve_roadmap(roadmap_id)
+            roadmap_status = services.roadmap_service.get_roadmap_status(roadmap_id)
 
             services.roadmap_service.add_roadmap_comment(
                 roadmap_id=roadmap_id,
                 author=class_meta[code]["teacher_name"],
-                text=f"Project '{project}' roadmap initialized for {team_name}.",
+                text=(
+                    f"Project '{project}' seeded with scenario '{scenario_label}' "
+                    f"for {team_name}."
+                ),
                 kind="comment",
             )
 
-            metrics = services.checkin_service.compute_metrics(team_id)
-            week_start_date = date(2026, 3, 3) + timedelta(days=7 * (global_team_idx - 1))
-            week_end_date = week_start_date + timedelta(days=6)
-            checkin_status = "On Track" if global_team_idx % 3 != 0 else "Needs Attention"
-            checkin_id = services.checkin_service.create_checkin(
-                team_id=team_id,
-                week_start=week_start_date.isoformat(),
-                week_end=week_end_date.isoformat(),
-                status=checkin_status,
-                wins=f"{project}: discovery and planning tasks completed.",
-                risks="Need additional validation and performance testing.",
-                next_goal=f"Complete implementation milestones for {project}.",
-                help_needed="Feedback on edge cases and UI consistency.",
-                metrics=metrics,
-            )
-            services.checkin_service.add_checkin_comment(
-                checkin_id=checkin_id,
-                author=class_meta[code]["teacher_name"],
-                text=f"Good progress on {project}. Keep task updates consistent.",
-                kind="comment",
-            )
+            total_weight = sum(task_weights)
+            percent_timeline = _scenario_percent_timeline(scenario_key)
+            team_start_week = date(2026, 2, 10) + timedelta(days=7 * (global_team_idx - 1))
+            checkin_ids: list[int] = []
+            for week_index, percent in enumerate(percent_timeline):
+                week_start_date = team_start_week + timedelta(days=7 * week_index)
+                week_end_date = week_start_date + timedelta(days=6)
+                checkin_status = _scenario_checkin_status(scenario_key, week_index)
+                metrics = _metrics_from_percent(total_weight, percent)
+                checkin_id = services.checkin_service.create_checkin(
+                    team_id=team_id,
+                    week_start=week_start_date.isoformat(),
+                    week_end=week_end_date.isoformat(),
+                    status=checkin_status,
+                    wins=_scenario_wins_text(scenario_key, project, week_index),
+                    risks=_scenario_risks_text(scenario_key, week_index),
+                    next_goal=_scenario_next_goal_text(scenario_key, project, week_index),
+                    help_needed=_scenario_help_needed(scenario_key, week_index),
+                    metrics=metrics,
+                )
+                comment = (
+                    f"Scenario={scenario_label}. "
+                    f"Week {week_index + 1}: monitor plan adherence and quality."
+                )
+                if scenario_key == "improving_productivity" and week_index == 2:
+                    comment = (
+                        "Scenario=Improving Productivity. "
+                        "Velocity increased significantly; keep QA discipline high."
+                    )
+                if scenario_key == "not_started" and week_index == 2:
+                    comment = (
+                        "Scenario=Not Started. "
+                        "Escalate blockers and align immediate execution plan."
+                    )
+                services.checkin_service.add_checkin_comment(
+                    checkin_id=checkin_id,
+                    author=class_meta[code]["teacher_name"],
+                    text=comment,
+                    kind="comment",
+                )
+                checkin_ids.append(checkin_id)
+
+            if scenario_key == "finished" and checkin_ids:
+                services.checkin_service.approve_checkin(checkin_ids[-1])
 
             class_summary["teams"].append(
                 {
                     "team_name": team_name,
                     "project": project,
+                    "scenario": scenario_label,
                     "size": len(members),
                     "principal_student_id": principal.student_id,
                     "roadmap_id": roadmap_id,
-                    "checkin_id": checkin_id,
+                    "roadmap_status": roadmap_status,
+                    "checkin_id": checkin_ids[-1] if checkin_ids else None,
+                    "checkin_count": len(checkin_ids),
+                    "progress_percent": percent_timeline[-1],
                 }
             )
             summary["totals"]["teams"] += 1
             summary["totals"]["roadmaps"] += 1
             summary["totals"]["tasks"] += len(created_task_ids)
-            summary["totals"]["checkins"] += 1
+            summary["totals"]["checkins"] += len(checkin_ids)
+            summary["scenario_totals"][scenario_label] += 1
 
         summary["classes"].append(class_summary)
 
