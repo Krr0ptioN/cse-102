@@ -40,7 +40,11 @@ Set-Location app
   - macOS/Linux: `make <task>`
   - Windows PowerShell: `.\make.ps1 <task>`
 - Tasks: `setup`, `install-dev`, `install-build`, `run`, `test`, `db-setup`, `seed`, `db-status`, `compile`, `clean`.
-- `seed` resets the database by default (`--reset`). In PowerShell, use `.\make.ps1 seed -NoReset` to preserve existing data.
+- Additional mock-data tasks:
+  - `seed-semester`: seeds the full semester mock dataset (`scripts/seed_semester_mock_data.py`)
+  - `seed-semester-noreset` (Make only): same seeding without reset
+  - `mock-setup`: `db-setup` + `seed-semester` + `db-status`
+- `seed` and `seed-semester` reset the database by default. In PowerShell, use `-NoReset` to preserve existing data.
 
 ### Build Standalone Binary
 Build on each target OS natively (no cross-compiling Windows from Linux or Linux from Windows):
@@ -59,12 +63,18 @@ Set-Location app
 - Default name is `CSE102-App` (`CSE102-App.exe` on Windows).
 
 ### Local SQLite Storage
-The app now stores user data in OS-local storage and auto-initializes schema on startup:
+By default the app resolves the DB path based on runtime mode:
 
-- Windows: `%LOCALAPPDATA%\CSE102ProjectManager\app.db`
-- Linux: `${XDG_DATA_HOME:-~/.local/share}/CSE102ProjectManager/app.db`
-- macOS: `~/Library/Application Support/CSE102ProjectManager/app.db`
-- On first run, the app auto-copies an existing legacy `app.db` (if found) into the new local path.
+- Repo checkout / development: uses `app/app.db` (works directly with mock seeding scripts)
+- Installed runtime: uses OS-local storage:
+  - Windows: `%LOCALAPPDATA%\CSE102ProjectManager\app.db`
+  - Linux: `${XDG_DATA_HOME:-~/.local/share}/CSE102ProjectManager/app.db`
+  - macOS: `~/Library/Application Support/CSE102ProjectManager/app.db`
+
+You can override this behavior:
+
+- `CSE102_DB_PATH=/absolute/or/relative/path/to/app.db` (or `APP_DB_PATH`) to force a specific DB file
+- `CSE102_DB_MODE=dev|installed` (or `APP_DB_MODE`) to force mode selection
 
 ### Notes
 - `PYTHONPATH=..` is set in the Makefile so imports like `app.services...` work when running from this directory.

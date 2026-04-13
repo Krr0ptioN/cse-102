@@ -3,7 +3,7 @@ UV := uv
 UV_RUN := $(UV) run --python .venv/bin/python
 PYTHONPATH := ..
 
-.PHONY: setup install-dev install-build run test db-setup seed db-status compile clean
+.PHONY: setup install-dev install-build run test db-setup seed seed-semester seed-semester-noreset mock-setup db-status compile clean
 
 setup:
 	$(UV) venv --python 3.14 .venv
@@ -28,6 +28,14 @@ db-setup:
 
 seed:
 	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) python scripts/seed_mock_data.py --reset
+
+seed-semester:
+	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) python scripts/seed_semester_mock_data.py --reset
+
+seed-semester-noreset:
+	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) python scripts/seed_semester_mock_data.py
+
+mock-setup: db-setup seed-semester db-status
 
 db-status:
 	PYTHONPATH=$(PYTHONPATH) $(UV_RUN) python scripts/db_status.py

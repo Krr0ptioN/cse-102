@@ -2,23 +2,57 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
-# Ensure project root is on sys.path so `import app.*` works when run from app/.
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(ROOT))
+# Ensure project root is on sys.path so `import app.*` works from any cwd.
+APP_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = APP_ROOT.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.db.connector import DBConnector
-from app.db.schema import init_db
-from app.services.factory import ServiceFactory
+from app.core.db.connector import DBConnector
+from app.core.db.schema import init_db
+from app.core.services.factory import ServiceFactory
+from app.libs.logger import get_logger
 
 
 DEMO_PASSWORD = "demo1234"
 DEMO_TEACHER_NAME = "Demo Teacher"
 DEMO_TEACHER_EMAIL = "teacher.demo@example.edu"
+DEFAULT_REPORT_PATH = APP_ROOT / "assets" / "mock_data" / "seed_mock_data_report.md"
 
 
-def seed(db_path: Path) -> None:
+logger = get_logger("app.scripts.seed_mock_data")
+
+
+def _write_report(db_path: Path, student_logins: list[tuple[str, str]], report_path: Path) -> None:
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    quick_student_email = student_logins[0][1] if student_logins else "N/A"
+    lines = [
+        "# Seed Mock Data Report",
+        "",
+        f"- Generated at: `{datetime.now().isoformat(timespec='seconds')}`",
+        f"- Database: `{db_path}`",
+        "",
+        "## Quick Login",
+        "",
+        f"- Teacher: `{DEMO_TEACHER_EMAIL}` / `{DEMO_PASSWORD}`",
+        f"- Student: `{quick_student_email}` / `{DEMO_PASSWORD}`",
+        "",
+        "## Student Accounts",
+        "",
+        "| Name | Email | Password |",
+        "| --- | --- | --- |",
+    ]
+    for name, email in student_logins:
+        lines.append(f"| {name} | `{email}` | `{DEMO_PASSWORD}` |")
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def seed(db_path: Path, report_path: Path) -> None:
+    logger.banner("Seed Mock Data")
+    logger.info("Target database: %s", db_path)
     init_db(str(db_path))
     services = ServiceFactory(DBConnector(str(db_path)))
     services.app_state_service.set_dataset_mode("mock")
@@ -29,6 +63,7 @@ def seed(db_path: Path) -> None:
         DEMO_PASSWORD,
         "teacher",
     )
+    logger.success("Teacher account ready: %s", DEMO_TEACHER_EMAIL)
 
     # Create class
     class_id = services.class_service.create_class(
@@ -50,9 +85,12 @@ def seed(db_path: Path) -> None:
     ]
 
     student_ids: dict[str, int] = {}
+    student_logins: list[tuple[str, str]] = []
     for name, email in students:
         account = services.auth_service.sign_up(name, email, DEMO_PASSWORD, "student")
         student_ids[name] = account.id
+        student_logins.append((name, email))
+    logger.success("Student accounts ready: %d", len(student_logins))
 
     # Teams (English names) with principals
     team_defs = [
@@ -181,6 +219,9 @@ def seed(db_path: Path) -> None:
             inv_id = services.team_service.create_invitation(team_id, declined_invitee)
             services.team_service.decline_invitation(inv_id)
 
+    _write_report(db_path, student_logins, report_path)
+    logger.success("Final report written: %s", report_path)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seed mock data into app.db")
@@ -195,11 +236,19 @@ def main() -> None:
         action="store_true",
         help="Delete the existing database file before seeding",
     )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        default=DEFAULT_REPORT_PATH,
+        help="Path to write markdown seed report",
+    )
     args = parser.parse_args()
     if args.reset and args.db.exists():
+        logger.warning("Removing existing database: %s", args.db)
         args.db.unlink()
-    seed(args.db)
-    print(f"Seeded mock data into {args.db}")
+    seed(args.db, args.report)
+    logger.success("Seeded mock data into %s", args.db)
+    logger.info("Quick login teacher: %s / %s", DEMO_TEACHER_EMAIL, DEMO_PASSWORD)
 
 
 if __name__ == "__main__":

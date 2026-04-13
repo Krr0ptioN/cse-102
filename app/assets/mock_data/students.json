@@ -1,0 +1,458 @@
+[
+  {
+    "student_id": "221401045",
+    "name": "Mehmet Berke Eyigün",
+    "department": "cse",
+    "year": 22,
+    "email": "mehmet.berke.eyigun.1045@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221401050",
+    "name": "Salih Boran Demircioğlu",
+    "department": "cse",
+    "year": 22,
+    "email": "salih.boran.demircioglu.1050@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221401057",
+    "name": "Açelya Yildiz",
+    "department": "cse",
+    "year": 22,
+    "email": "acelya.yildiz.1057@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221402023",
+    "name": "Şengül Nisa Demirci",
+    "department": "bme",
+    "year": 22,
+    "email": "sengul.nisa.demirci.2023@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221402024",
+    "name": "Sila Yener",
+    "department": "bme",
+    "year": 22,
+    "email": "sila.yener.2024@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221402029",
+    "name": "Yusuf Çağri Gül",
+    "department": "bme",
+    "year": 22,
+    "email": "yusuf.cagri.gul.2029@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221402031",
+    "name": "Sudem Gölbaşi",
+    "department": "bme",
+    "year": 22,
+    "email": "sudem.golbasi.2031@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221402037",
+    "name": "Melisa Dangir",
+    "department": "bme",
+    "year": 22,
+    "email": "melisa.dangir.2037@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "221402602",
+    "name": "Ömer Döndü",
+    "department": "bme",
+    "year": 22,
+    "email": "omer.dondu.2602@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231401023",
+    "name": "Başar Haktan Yaman",
+    "department": "cse",
+    "year": 23,
+    "email": "basar.haktan.yaman.1023@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231401041",
+    "name": "Ali Emre Sayan",
+    "department": "cse",
+    "year": 23,
+    "email": "ali.emre.sayan.1041@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231401046",
+    "name": "Batuhan Büyüknacar",
+    "department": "cse",
+    "year": 23,
+    "email": "batuhan.buyuknacar.1046@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402002",
+    "name": "Ilgar Bulut",
+    "department": "bme",
+    "year": 23,
+    "email": "ilgar.bulut.2002@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402003",
+    "name": "Irem Kasap",
+    "department": "bme",
+    "year": 23,
+    "email": "irem.kasap.2003@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402007",
+    "name": "Ezgi Çibik",
+    "department": "bme",
+    "year": 23,
+    "email": "ezgi.cibik.2007@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402015",
+    "name": "Alp Haciosmanoğlu",
+    "department": "bme",
+    "year": 23,
+    "email": "alp.haciosmanoglu.2015@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402024",
+    "name": "Muhammet Emir Kaya",
+    "department": "bme",
+    "year": 23,
+    "email": "muhammet.emir.kaya.2024@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402025",
+    "name": "Osman Gökhan Gül",
+    "department": "bme",
+    "year": 23,
+    "email": "osman.gokhan.gul.2025@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "231402028",
+    "name": "Doğa Sütçü",
+    "department": "bme",
+    "year": 23,
+    "email": "doga.sutcu.2028@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401005",
+    "name": "Görkem Duran",
+    "department": "cse",
+    "year": 24,
+    "email": "gorkem.duran.1005@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401006",
+    "name": "Hayrullah Şimşek",
+    "department": "cse",
+    "year": 24,
+    "email": "hayrullah.simsek.1006@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401007",
+    "name": "Kayra Ziya Kiran",
+    "department": "cse",
+    "year": 24,
+    "email": "kayra.ziya.kiran.1007@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401008",
+    "name": "Hatice Kübra Yükselen",
+    "department": "cse",
+    "year": 24,
+    "email": "hatice.kubra.yukselen.1008@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401009",
+    "name": "Nureddin Cemil Ünlü",
+    "department": "cse",
+    "year": 24,
+    "email": "nureddin.cemil.unlu.1009@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401013",
+    "name": "Kartal Büyük",
+    "department": "cse",
+    "year": 24,
+    "email": "kartal.buyuk.1013@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401016",
+    "name": "Meryem Varli",
+    "department": "cse",
+    "year": 24,
+    "email": "meryem.varli.1016@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401019",
+    "name": "Berke Zafer Akgün",
+    "department": "cse",
+    "year": 24,
+    "email": "berke.zafer.akgun.1019@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401023",
+    "name": "Nihat Mert Uğurlu",
+    "department": "cse",
+    "year": 24,
+    "email": "nihat.mert.ugurlu.1023@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401024",
+    "name": "Ege Çotuk",
+    "department": "cse",
+    "year": 24,
+    "email": "ege.cotuk.1024@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401025",
+    "name": "Nehir Çinik",
+    "department": "cse",
+    "year": 24,
+    "email": "nehir.cinik.1025@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401027",
+    "name": "Jinda Hayat Kirici",
+    "department": "cse",
+    "year": 24,
+    "email": "jinda.hayat.kirici.1027@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401028",
+    "name": "Beyza Şevkin",
+    "department": "cse",
+    "year": 24,
+    "email": "beyza.sevkin.1028@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401030",
+    "name": "Kaan Akin",
+    "department": "cse",
+    "year": 24,
+    "email": "kaan.akin.1030@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401031",
+    "name": "Ahmed Ibrahim Tekin",
+    "department": "cse",
+    "year": 24,
+    "email": "ahmed.ibrahim.tekin.1031@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401034",
+    "name": "Bedri Efe Kotan",
+    "department": "cse",
+    "year": 24,
+    "email": "bedri.efe.kotan.1034@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401904",
+    "name": "Resulaly Soyunov",
+    "department": "cse",
+    "year": 24,
+    "email": "resulaly.soyunov.1904@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241401908",
+    "name": "Mardin Nasouti",
+    "department": "cse",
+    "year": 24,
+    "email": "mardin.nasouti.1908@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402005",
+    "name": "Ela Özgül",
+    "department": "bme",
+    "year": 24,
+    "email": "ela.ozgul.2005@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402009",
+    "name": "Zeynep Duru Durukan",
+    "department": "bme",
+    "year": 24,
+    "email": "zeynep.duru.durukan.2009@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402014",
+    "name": "Özge Gürkan",
+    "department": "bme",
+    "year": 24,
+    "email": "ozge.gurkan.2014@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402015",
+    "name": "Ceren Turan",
+    "department": "bme",
+    "year": 24,
+    "email": "ceren.turan.2015@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402016",
+    "name": "Pelin Nur Özdemir",
+    "department": "bme",
+    "year": 24,
+    "email": "pelin.nur.ozdemir.2016@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402017",
+    "name": "Ege Kirikkanat",
+    "department": "bme",
+    "year": 24,
+    "email": "ege.kirikkanat.2017@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402905",
+    "name": "Ismayil Gudratli",
+    "department": "bme",
+    "year": 24,
+    "email": "ismayil.gudratli.2905@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "241402907",
+    "name": "Javad Aliyev",
+    "department": "bme",
+    "year": 24,
+    "email": "javad.aliyev.2907@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401013",
+    "name": "Ali Kerem Aydemir",
+    "department": "cse",
+    "year": 25,
+    "email": "ali.kerem.aydemir.1013@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401017",
+    "name": "Iclal Akkaş",
+    "department": "cse",
+    "year": 25,
+    "email": "iclal.akkas.1017@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401018",
+    "name": "Deniz Karaca",
+    "department": "cse",
+    "year": 25,
+    "email": "deniz.karaca.1018@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401020",
+    "name": "Berkehan Kocabaş",
+    "department": "cse",
+    "year": 25,
+    "email": "berkehan.kocabas.1020@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401026",
+    "name": "Duygu Karaca",
+    "department": "cse",
+    "year": 25,
+    "email": "duygu.karaca.1026@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401030",
+    "name": "Muhammed Ramazan Tosun",
+    "department": "cse",
+    "year": 25,
+    "email": "muhammed.ramazan.tosun.1030@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401032",
+    "name": "Kemal Özgür Ayhan",
+    "department": "cse",
+    "year": 25,
+    "email": "kemal.ozgur.ayhan.1032@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401034",
+    "name": "Yiğit Furkan Durmuş",
+    "department": "cse",
+    "year": 25,
+    "email": "yigit.furkan.durmus.1034@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401036",
+    "name": "Duru Er",
+    "department": "cse",
+    "year": 25,
+    "email": "duru.er.1036@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401039",
+    "name": "Deren Meral",
+    "department": "cse",
+    "year": 25,
+    "email": "deren.meral.1039@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401045",
+    "name": "Yiğit Yunusoğlu",
+    "department": "cse",
+    "year": 25,
+    "email": "yigit.yunusoglu.1045@student.mock.edu.tr",
+    "user_id": null
+  },
+  {
+    "student_id": "251401609",
+    "name": "Mehmed Niyazi Ak",
+    "department": "cse",
+    "year": 25,
+    "email": "mehmed.niyazi.ak.1609@student.mock.edu.tr",
+    "user_id": null
+  }
+]

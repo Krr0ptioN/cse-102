@@ -1,0 +1,72 @@
+{
+  "phases": [
+    {
+      "name": "Discovery",
+      "tasks": [
+        {
+          "title": "Define scope and success metrics for {project}",
+          "weight": 8
+        },
+        {
+          "title": "Write user stories and acceptance criteria for {project}",
+          "weight": 9
+        },
+        {
+          "title": "Identify data entities and integration requirements",
+          "weight": 7
+        }
+      ]
+    },
+    {
+      "name": "Design",
+      "tasks": [
+        {
+          "title": "Create ER diagram and core API contract for {project}",
+          "weight": 10
+        },
+        {
+          "title": "Prepare UI flow and wireframes",
+          "weight": 8
+        },
+        {
+          "title": "Define sprint backlog and task ownership",
+          "weight": 7
+        }
+      ]
+    },
+    {
+      "name": "Implementation",
+      "tasks": [
+        {
+          "title": "Implement core modules for {project}",
+          "weight": 12
+        },
+        {
+          "title": "Implement role-based auth and access control",
+          "weight": 8
+        },
+        {
+          "title": "Implement reporting and dashboard components",
+          "weight": 9
+        }
+      ]
+    },
+    {
+      "name": "Validation",
+      "tasks": [
+        {
+          "title": "Write and run unit/integration test suite",
+          "weight": 8
+        },
+        {
+          "title": "Fix defects and improve reliability/performance",
+          "weight": 7
+        },
+        {
+          "title": "Prepare final demo and deployment checklist",
+          "weight": 6
+        }
+      ]
+    }
+  ]
+}

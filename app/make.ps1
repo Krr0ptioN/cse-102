@@ -27,7 +27,9 @@ function Show-Usage {
     Write-Host "  run           Launch the Tkinter app"
     Write-Host "  test          Run pytest"
     Write-Host "  db-setup      Initialize database schema"
-    Write-Host "  seed          Seed mock data (resets DB by default)"
+    Write-Host "  seed          Seed demo mock data (resets DB by default)"
+    Write-Host "  seed-semester Seed semester mock dataset (resets DB by default)"
+    Write-Host "  mock-setup    Initialize DB + seed semester mock dataset + show db status"
     Write-Host "  db-status     Print row counts for all tables"
     Write-Host "  compile       Build standalone binary with PyInstaller"
     Write-Host "  clean         Remove .venv and __pycache__ directories"
@@ -36,7 +38,7 @@ function Show-Usage {
     Write-Host "Examples:"
     Write-Host "  .\make.ps1 setup"
     Write-Host "  .\make.ps1 run"
-    Write-Host "  .\make.ps1 seed -NoReset"
+    Write-Host "  .\make.ps1 seed-semester -NoReset"
     Write-Host "  .\make.ps1 compile"
 }
 
@@ -207,6 +209,24 @@ try {
                 $seedArgs += "--reset"
             }
             Invoke-InVenv -CommandArgs $seedArgs
+            break
+        }
+        "seed-semester" {
+            $seedArgs = @("scripts/seed_semester_mock_data.py")
+            if (-not $NoReset) {
+                $seedArgs += "--reset"
+            }
+            Invoke-InVenv -CommandArgs $seedArgs
+            break
+        }
+        "mock-setup" {
+            Invoke-InVenv -CommandArgs @("scripts/init_db.py")
+            $seedArgs = @("scripts/seed_semester_mock_data.py")
+            if (-not $NoReset) {
+                $seedArgs += "--reset"
+            }
+            Invoke-InVenv -CommandArgs $seedArgs
+            Invoke-InVenv -CommandArgs @("scripts/db_status.py")
             break
         }
         "db-status" {

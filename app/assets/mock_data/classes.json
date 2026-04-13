@@ -1,0 +1,25 @@
+[
+  {
+    "code": "BME102",
+    "name": "BME102-Introduction to Biomedical science",
+    "term": "Spring 2026",
+    "teacher_email": "ayse.yilmaz@mock.edu.tr",
+    "department": "bme"
+  },
+  {
+    "code": "CSE102",
+    "name": "CSE-102 Programming Practice",
+    "term": "Spring 2026",
+    "teacher_email": "emre.aydin@mock.edu.tr",
+    "department": "cse",
+    "year_min": 24
+  },
+  {
+    "code": "CSE220",
+    "name": "CSE-220 Web Programming",
+    "term": "Spring 2026",
+    "teacher_email": "elif.karaca@mock.edu.tr",
+    "department": "cse",
+    "year_max": 23
+  }
+]

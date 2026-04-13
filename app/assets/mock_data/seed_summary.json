@@ -1,0 +1,160 @@
+{
+  "classes": [
+    {
+      "code": "BME102",
+      "name": "BME102-Introduction to Biomedical science",
+      "teacher": "Dr. Ayse Yilmaz",
+      "student_count": 21,
+      "team_count": 5,
+      "teams": [
+        {
+          "team_name": "BME102-Team-01",
+          "project": "Congress Registration Managing System",
+          "size": 5,
+          "principal_student_id": "221402023",
+          "roadmap_id": 1,
+          "checkin_id": 1
+        },
+        {
+          "team_name": "BME102-Team-02",
+          "project": "Pharmacy Drug Inventory and Stock Management System",
+          "size": 4,
+          "principal_student_id": "221402602",
+          "roadmap_id": 2,
+          "checkin_id": 2
+        },
+        {
+          "team_name": "BME102-Team-03",
+          "project": "Car Rental Management System",
+          "size": 4,
+          "principal_student_id": "231402015",
+          "roadmap_id": 3,
+          "checkin_id": 3
+        },
+        {
+          "team_name": "BME102-Team-04",
+          "project": "Student course registration system",
+          "size": 4,
+          "principal_student_id": "241402005",
+          "roadmap_id": 4,
+          "checkin_id": 4
+        },
+        {
+          "team_name": "BME102-Team-05",
+          "project": "Stock Management System",
+          "size": 4,
+          "principal_student_id": "241402016",
+          "roadmap_id": 5,
+          "checkin_id": 5
+        }
+      ]
+    },
+    {
+      "code": "CSE102",
+      "name": "CSE-102 Programming Practice",
+      "teacher": "Dr. Emre Aydin",
+      "student_count": 30,
+      "team_count": 7,
+      "teams": [
+        {
+          "team_name": "CSE102-Team-01",
+          "project": "football player scouting and analysis system",
+          "size": 5,
+          "principal_student_id": "241401005",
+          "roadmap_id": 6,
+          "checkin_id": 6
+        },
+        {
+          "team_name": "CSE102-Team-02",
+          "project": "scRNA Insight - Hucre Tipi Siniflandirma ve QC (Kalite Kontrol) Paneli",
+          "size": 5,
+          "principal_student_id": "241401013",
+          "roadmap_id": 7,
+          "checkin_id": 7
+        },
+        {
+          "team_name": "CSE102-Team-03",
+          "project": "Smart Clinical Priority System",
+          "size": 4,
+          "principal_student_id": "241401025",
+          "roadmap_id": 8,
+          "checkin_id": 8
+        },
+        {
+          "team_name": "CSE102-Team-04",
+          "project": "Psikolojik Danismanlik Merkezleri Icin Danisan ve Randevu Yonetim Sistemi",
+          "size": 4,
+          "principal_student_id": "241401031",
+          "roadmap_id": 9,
+          "checkin_id": 9
+        },
+        {
+          "team_name": "CSE102-Team-05",
+          "project": "Smart Gym & Basic Health Tracker System",
+          "size": 4,
+          "principal_student_id": "251401013",
+          "roadmap_id": 10,
+          "checkin_id": 10
+        },
+        {
+          "team_name": "CSE102-Team-06",
+          "project": "Dosage and Drug Interaction Calculator",
+          "size": 4,
+          "principal_student_id": "251401026",
+          "roadmap_id": 11,
+          "checkin_id": 11
+        },
+        {
+          "team_name": "CSE102-Team-07",
+          "project": "Laboratuvar Envanter ve Kit Takip Sistemi",
+          "size": 4,
+          "principal_student_id": "251401036",
+          "roadmap_id": 12,
+          "checkin_id": 12
+        }
+      ]
+    },
+    {
+      "code": "CSE220",
+      "name": "CSE-220 Web Programming",
+      "teacher": "Dr. Elif Karaca",
+      "student_count": 6,
+      "team_count": 1,
+      "teams": [
+        {
+          "team_name": "CSE220-Team-01",
+          "project": "Intelligent Bioreactor Monitoring and Decision Support System",
+          "size": 6,
+          "principal_student_id": "221401045",
+          "roadmap_id": 13,
+          "checkin_id": 13
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "teachers": 3,
+    "students": 57,
+    "teams": 13,
+    "roadmaps": 13,
+    "tasks": 156,
+    "checkins": 13
+  },
+  "credentials": {
+    "default_password": "MockData2026!",
+    "credentials_json": "/home/master/hex/projects/cse-102-project/app/assets/mock_data/login_credentials.json",
+    "quick_login": {
+      "teacher": {
+        "name": "Dr. Ayse Yilmaz",
+        "email": "ayse.yilmaz@mock.edu.tr",
+        "password": "MockData2026!"
+      },
+      "student": {
+        "student_id": "221401045",
+        "name": "Mehmet Berke Eyigün",
+        "email": "mehmet.berke.eyigun.1045@student.mock.edu.tr",
+        "password": "MockData2026!"
+      }
+    }
+  }
+}
