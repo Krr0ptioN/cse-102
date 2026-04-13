@@ -3,7 +3,7 @@ from app.ui.student.comments import StudentCommentsSection
 from app.ui.student.roadmap import RoadmapBuilderSection
 from app.ui.student.stats import StudentStatsRow
 from app.ui.student.tasks import TaskSection
-from app.ui.components import TeamDrawer as StudentDrawer
+from app.libs.ui_kit.components import TeamDrawer as StudentDrawer
 
 __all__ = [
     "StudentStatsRow",

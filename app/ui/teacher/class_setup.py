@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.ui.components import Button, Card, Input, Label, Section, SectionHeader
+from app.libs.ui_kit.components import Button, Card, Input, Label, Section, SectionHeader
 
 
 class ClassSetupSection(Section):

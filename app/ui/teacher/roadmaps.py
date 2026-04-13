@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.ui.components import (
+from app.libs.ui_kit.components import (
     Button,
     ButtonBar,
     Card,
@@ -11,7 +11,7 @@ from app.ui.components import (
     Label,
     SectionHeader,
 )
-from app.ui.theme import palette
+from app.libs.ui_kit.theme import palette
 
 
 class RoadmapReviewSection(tk.Frame):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.ui.components import ButtonBar, DataTable, Section
+from app.libs.ui_kit.components import ButtonBar, DataTable, Section
 
 
 class StudentCommentsSection(Section):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.ui.components import FormDialog, ToggleSelectionList
+from app.libs.ui_kit.components import FormDialog, ToggleSelectionList
 from app.ui.teacher import TeamSection
 
 

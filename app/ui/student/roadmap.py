@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.ui.components import (
+from app.libs.ui_kit.components import (
     Button,
     ButtonBar,
     Card,
@@ -13,8 +13,8 @@ from app.ui.components import (
     LabeledEntry,
     Section,
 )
-from app.ui.components.primitives._base import tk_style
-from app.ui.forms import TaskForm
+from app.libs.ui_kit.components.primitives._base import tk_style
+from app.ui.student.forms import TaskForm
 
 
 class RoadmapBuilderSection(Section):

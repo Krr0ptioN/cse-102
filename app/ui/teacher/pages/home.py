@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.ui.components import Button, Card, DataTable, Input, SectionHeader, StatCard
+from app.libs.ui_kit.components import Button, Card, DataTable, Input, SectionHeader, StatCard
 
 
 class TeacherHomePage(tk.Frame):

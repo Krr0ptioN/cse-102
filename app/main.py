@@ -8,36 +8,35 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     ctk = None
 
-from app.design_system.tokens import palette
-from app.core.paths import ensure_local_db_path
-from app.db.connector import DBConnector
-from app.db.schema import init_db
-from app.services.auth import AuthenticatedUser
-from app.services.factory import ServiceFactory
-from app.ui.components.composed import SignInAuthCard, SignUpAuthCard
-from app.ui.root_factory import resolve_root_class, apply_root_theme
-from app.ui.student_dashboard import StudentDashboard
-from app.ui.teacher_dashboard import TeacherDashboard
+from app.libs.ui_kit.design_system.tokens import palette
+from app.ui.shared.paths import ensure_local_db_path
+from app.core.bootstrap import AppBootstrap
+from app.core.services.auth import AuthenticatedUser
+from app.libs.logger import get_logger
+from app.libs.ui_kit.components.composed import SignInAuthCard, SignUpAuthCard
+from app.ui.shared.root_factory import resolve_root_class, apply_root_theme
+from app.ui.student.dashboard import StudentDashboard
+from app.ui.teacher.dashboard import TeacherDashboard
 
 
 BaseRoot = resolve_root_class()
+log = get_logger("app.main")
 
 
 class AppShell(BaseRoot):
     def __init__(self) -> None:
         super().__init__()
+        log.banner("Application Startup")
         apply_root_theme(self)
-        self.title("Teacher-Student Assignment Dashboard")
-        self.geometry("1100x740")
+        runtime = AppBootstrap(db_path_resolver=ensure_local_db_path).initialize()
+        self.title(runtime.config.title)
+        self.geometry(runtime.config.geometry)
         colors = palette()
         self.configure(bg=colors.bg)
+        log.info("Using database at %s", runtime.config.db_path)
 
-        db_path = ensure_local_db_path()
-        init_db(str(db_path))
-        db = DBConnector(str(db_path))
-
-        self._services = ServiceFactory(db)
-        self._dataset_mode = self._services.app_state_service.get_dataset_mode()
+        self._services = runtime.services
+        self._dataset_mode = runtime.dataset_mode
         self._auth_mode = "signin"
         self._colors = colors
         container_cls = ctk.CTkFrame if self._is_ctk() and ctk else tk.Frame
@@ -48,6 +47,7 @@ class AppShell(BaseRoot):
         self.container.pack(fill="both", expand=True)
 
         self._show_login()
+        log.success("App shell initialized")
 
     # ----- Navigation -------------------------------------------------
     def _clear_container(self) -> None:
@@ -114,6 +114,7 @@ class AppShell(BaseRoot):
 
     def _start_session(self, user: AuthenticatedUser) -> None:
         self._services.session_service.start(user)
+        log.success("Session started for %s (%s)", user.email, user.role)
         if user.role == "teacher":
             self._load_teacher()
             return
@@ -125,6 +126,7 @@ class AppShell(BaseRoot):
         self._show_login()
 
     def _logout(self) -> None:
+        log.info("Session cleared")
         self._services.session_service.clear()
         self._show_login()
 
