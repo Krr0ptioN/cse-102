@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.ui.components import Button, Modal, Section, bind_modal_keys
+from app.ui.components import Modal, Section, add_modal_actions
 from app.ui.forms import ApprovalNoteForm, CommentForm
 from app.ui.teacher import CheckinsSection
 
@@ -27,11 +27,11 @@ class TeacherCheckinsPage(tk.Frame):
             self._add_checkin_comment,
             self._approve_checkin,
         )
-        self.section.pack(fill="both", expand=True, padx=8, pady=8)
+        self.section.pack(fill="both", expand=True)
 
         # Drawer-like details for checkin summary
         self.details = Section(self, "Details")
-        self.details.pack(fill="x", padx=8, pady=(0, 8))
+        self.details.pack(fill="x", padx=12, pady=(0, 12))
         self.details_body = tk.Label(self.details.body, text="Select a check-in")
         self.details_body.pack(anchor="w", padx=4, pady=4)
 
@@ -89,13 +89,7 @@ class TeacherCheckinsPage(tk.Frame):
             modal.destroy()
             self._refresh_checkin_comments()
 
-        bind_modal_keys(modal, save)
-        Button(
-            modal.actions, text="Cancel", command=modal.destroy, variant="outline"
-        ).pack(side="right", padx=4)
-        Button(modal.actions, text="Save", command=save, size="sm").pack(
-            side="right", padx=4
-        )
+        add_modal_actions(modal, save, confirm_text="Save")
 
     def _approve_checkin(self) -> None:
         checkin_id = self._selected_checkin_id()
@@ -117,13 +111,7 @@ class TeacherCheckinsPage(tk.Frame):
             modal.destroy()
             self._refresh_checkins()
 
-        bind_modal_keys(modal, save)
-        Button(
-            modal.actions, text="Cancel", command=modal.destroy, variant="outline"
-        ).pack(side="right", padx=4)
-        Button(modal.actions, text="Approve", command=save, size="sm").pack(
-            side="right", padx=4
-        )
+        add_modal_actions(modal, save, confirm_text="Approve")
 
     def _show_checkin_details(self) -> None:
         checkin_id = self._selected_checkin_id()

@@ -6,31 +6,33 @@ from app.ui.components.primitives import Button, Card, Input, Label, Select
 
 
 class AuthCard:
-    """Auth card for sign-in / sign-up."""
+    """Base auth card. Subclasses define content and extra fields."""
+
+    title_text = ""
+    subtitle_text = ""
+    action_text = ""
+    switch_prompt = ""
+    switch_action = ""
+    include_name = False
+    include_role = False
 
     def __init__(
         self,
         master,
         *,
-        sign_up_mode: bool,
         on_submit,
         on_switch,
     ) -> None:
-        self.frame = Card(master)
+        self.frame = Card(master, width=400, height=480)
+        self._on_submit = on_submit
 
-        self.title_text = "Create Account" if sign_up_mode else "Welcome Back"
-        self.subtitle_text = (
-            "Use this form to create your account"
-            if sign_up_mode
-            else "Sign in to continue"
-        )
-        self.action_text = "Create Account" if sign_up_mode else "Sign In"
-        self.switch_prompt = (
-            "Already have an account?" if sign_up_mode else "Need an account?"
-        )
-        self.switch_action = "Sign In" if sign_up_mode else "Sign Up"
+        self.name_entry = None
+        self.role_var = tk.StringVar(value="student")
+        self.role_select = None
 
-        Label(self.frame, text=self.title_text, weight="bold").pack(pady=(22, 8), padx=28)
+        Label(self.frame, text=self.title_text, weight="bold").pack(
+            pady=(22, 8), padx=28
+        )
         Label(self.frame, text=self.subtitle_text, variant="muted").pack(
             pady=(0, 14), padx=28
         )
@@ -41,8 +43,7 @@ class AuthCard:
             anchor="w", padx=12, pady=(10, 6)
         )
 
-        self.name_entry = None
-        if sign_up_mode:
+        if self.include_name:
             self.name_entry = Input(form, placeholder="Full name")
             self.name_entry.pack(fill="x", padx=12, pady=4)
 
@@ -52,9 +53,7 @@ class AuthCard:
         self.password_entry = Input(form, placeholder="Password", show="*")
         self.password_entry.pack(fill="x", padx=12, pady=4)
 
-        self.role_var = tk.StringVar(value="student")
-        self.role_select = None
-        if sign_up_mode:
+        if self.include_role:
             self.role_select = Select(
                 form,
                 values=["student", "teacher"],
@@ -65,7 +64,7 @@ class AuthCard:
         Button(
             form,
             text=self.action_text,
-            command=lambda: on_submit(self.__values(sign_up_mode)),
+            command=self._submit,
             variant="default",
         ).pack(fill="x", padx=12, pady=(8, 12))
 
@@ -80,15 +79,37 @@ class AuthCard:
         switch_label.pack(pady=(2, 18))
         switch_label.bind("<Button-1>", lambda _event: on_switch())
 
-    def __values(self, sign_up_mode: bool) -> dict[str, str]:
+    def _submit(self) -> None:
+        self._on_submit(self._values())
+
+    def _values(self) -> dict[str, str]:
         data = {
             "email": self.email_entry.get().strip(),
             "password": self.password_entry.get(),
         }
-        if sign_up_mode:
+        if self.include_name:
             data["name"] = self.name_entry.get().strip() if self.name_entry else ""
+        if self.include_role:
             data["role"] = self.role_var.get().strip() or "student"
         return data
 
     def place_center(self) -> None:
         self.frame.place(relx=0.5, rely=0.5, anchor="center")
+
+
+class SignInAuthCard(AuthCard):
+    title_text = "Welcome Back"
+    subtitle_text = "Sign in to continue"
+    action_text = "Sign In"
+    switch_prompt = "Need an account?"
+    switch_action = "Sign Up"
+
+
+class SignUpAuthCard(AuthCard):
+    title_text = "Create Account"
+    subtitle_text = "Use this form to create your account"
+    action_text = "Create Account"
+    switch_prompt = "Already have an account?"
+    switch_action = "Sign In"
+    include_name = True
+    include_role = True

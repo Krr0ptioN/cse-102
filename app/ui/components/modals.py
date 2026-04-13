@@ -17,6 +17,7 @@ class Modal(tk.Toplevel):
         self.configure(bg=colors["panel"])
         self.resizable(False, False)
         self.transient(master)
+        self.wait_visibility()
         self.grab_set()
 
         self.header = tk.Label(

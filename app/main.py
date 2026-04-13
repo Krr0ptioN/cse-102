@@ -14,7 +14,7 @@ from app.db.connector import DBConnector
 from app.db.schema import init_db
 from app.services.auth import AuthenticatedUser
 from app.services.factory import ServiceFactory
-from app.ui.components.composed import AuthCard
+from app.ui.components.composed import SignInAuthCard, SignUpAuthCard
 from app.ui.root_factory import resolve_root_class, apply_root_theme
 from app.ui.student_dashboard import StudentDashboard
 from app.ui.teacher_dashboard import TeacherDashboard
@@ -27,7 +27,7 @@ class AppShell(BaseRoot):
     def __init__(self) -> None:
         super().__init__()
         apply_root_theme(self)
-        self.title("Project Lifecycle Engine")
+        self.title("Teacher-Student Assignment Dashboard")
         self.geometry("1100x740")
         colors = palette()
         self.configure(bg=colors.bg)
@@ -35,9 +35,8 @@ class AppShell(BaseRoot):
         db_path = ensure_local_db_path()
         init_db(str(db_path))
         db = DBConnector(str(db_path))
-        services = ServiceFactory(db)
 
-        self._services = services
+        self._services = ServiceFactory(db)
         self._dataset_mode = self._services.app_state_service.get_dataset_mode()
         self._auth_mode = "signin"
         self._colors = colors
@@ -69,9 +68,9 @@ class AppShell(BaseRoot):
         frame = frame_cls(self.container, **frame_kwargs)
         frame.pack(fill="both", expand=True)
 
-        auth_card = AuthCard(
+        auth_card_cls = SignUpAuthCard if sign_up_mode else SignInAuthCard
+        auth_card = auth_card_cls(
             frame,
-            sign_up_mode=sign_up_mode,
             on_submit=self._submit_auth,
             on_switch=lambda: self._switch_auth_mode(
                 "signin" if sign_up_mode else "signup"

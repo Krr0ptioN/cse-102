@@ -13,8 +13,8 @@ def apply_ctk_theme(root: ctk.CTk | None = None) -> None:
     coexist while new CTk-based shells/components pick up these defaults.
     """
 
-    family = Typography.primary_font_family()
     Typography.ensure_ctk_font(root)
+    family = Typography.primary_font_family()
 
     # Apply global default font for CTk widgets.
     try:

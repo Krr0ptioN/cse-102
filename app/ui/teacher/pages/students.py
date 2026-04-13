@@ -24,7 +24,7 @@ class TeacherStudentsPage(tk.Frame):
             self._delete_student,
             self._show_student_details,
         )
-        self.student_section.pack(fill="both", expand=True, padx=8, pady=8)
+        self.student_section.pack(fill="both", expand=True)
 
     def _refresh_students(self) -> None:
         students = self.services["class"].list_users(role="student")

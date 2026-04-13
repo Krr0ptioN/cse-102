@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from datetime import date, timedelta
-from tkinter import messagebox, ttk
+from tkinter import messagebox
 
 from app.services.auth import AuthenticatedUser
 from app.services.checkin import CheckinService
@@ -12,14 +12,14 @@ from app.services.team import TeamService
 from app.services.classes import ClassService
 from app.services.validation import validate_roadmap
 from app.ui.charts import show_reports_window
-from app.ui.components import Button, Modal, bind_modal_keys
+from app.ui.components import FormDialog, Modal, add_modal_actions
 from app.ui.dashboard_base import DashboardBase
 from app.ui.forms import CommentForm, TaskForm
+from app.ui.student.pages import StudentOverviewPage, StudentSectionPage
 from app.ui.student import (
     RoadmapBuilderSection,
     StudentCheckinsSection,
     StudentCommentsSection,
-    StudentStatsRow,
     TaskSection,
 )
 from app.design_system.typography import Typography
@@ -64,27 +64,58 @@ class StudentDashboard(DashboardBase):
         self.student_choices: dict[str, Choice] = {}
         self.team_choices: dict[str, Choice] = {}
         self.member_choices: dict[str, Choice] = {}
+        self._current_page: str | None = None
+        self._pages: dict[str, tk.Frame] = {}
 
-        super().__init__(master, "Student Workspace", on_back)
+        nav_items = [
+            ("Overview", "overview"),
+            ("Roadmap", "roadmap"),
+            ("Tasks", "tasks"),
+            ("Check-ins", "checkins"),
+            ("Comments", "comments"),
+            ("Reports", "reports"),
+        ]
+
+        super().__init__(
+            master,
+            "Student Workspace",
+            on_back,
+            nav_items=nav_items,
+            on_nav=self._on_nav,
+        )
 
         if self.demo_mode:
             self.add_demo_button()
+        self.add_topbar_button("View Charts", self._show_charts)
         self._refresh_students()
         self._refresh_invitations()
         self._refresh_teams()
+        self._navigate("overview")
 
     def build_layout(self) -> None:
         content = self.shell.content
-        self.configure_content_grid((1, 1, 0))
+        content.grid_rowconfigure(0, weight=1)
+        content.grid_columnconfigure(0, weight=1)
+        content.grid_columnconfigure(1, weight=0, minsize=260)
 
-        self.stats_row = StudentStatsRow(content)
-        self.stats_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
+        self.page_host = tk.Frame(content, bg=content["bg"])
+        self.page_host.grid(row=0, column=0, sticky="nsew")
 
+        overview_page = StudentOverviewPage(self.page_host, self._navigate)
+        self.stats_row = overview_page.stats_row
+
+        roadmap_page = StudentSectionPage(
+            self.page_host,
+            title="Roadmap",
+            subtitle="Manage invites, phases, and task planning.",
+        )
         self.roadmap_section = RoadmapBuilderSection(
-            content,
+            roadmap_page.body,
             self._set_active_student,
             self._accept_invite,
             self._decline_invite,
+            self._create_team,
+            self._invite_student,
             self._load_roadmap,
             self._add_phase,
             self._edit_phase,
@@ -96,25 +127,69 @@ class StudentDashboard(DashboardBase):
             self._show_charts,
             show_student_selector=False,
         )
-        self.roadmap_section.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
+        self.roadmap_section.pack(fill="both", expand=True)
 
+        tasks_page = StudentSectionPage(
+            self.page_host,
+            title="Tasks",
+            subtitle="Track implementation progress and updates.",
+        )
         self.task_section = TaskSection(
-            content, self._refresh_updates, self._set_task_status, self._add_update
+            tasks_page.body,
+            self._refresh_updates,
+            self._set_task_status,
+            self._add_update,
         )
-        self.task_section.grid(row=1, column=1, sticky="nsew", padx=8, pady=8)
+        self.task_section.pack(fill="both", expand=True)
 
-        bottom_tabs = ttk.Notebook(content)
-        bottom_tabs.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
+        comments_page = StudentSectionPage(
+            self.page_host,
+            title="Comments",
+            subtitle="Roadmap feedback and discussion history.",
+        )
+        self.comments_section = StudentCommentsSection(
+            comments_page.body,
+            self._add_comment,
+        )
+        self.comments_section.pack(fill="both", expand=True)
 
-        self.comments_section = StudentCommentsSection(bottom_tabs, self._add_comment)
-        bottom_tabs.add(self.comments_section, text="Comments")
-
+        checkins_page = StudentSectionPage(
+            self.page_host,
+            title="Check-ins",
+            subtitle="Weekly status reports and progress metrics.",
+        )
         self.checkins_section = StudentCheckinsSection(
-            bottom_tabs, self._submit_checkin
+            checkins_page.body,
+            self._submit_checkin,
         )
-        bottom_tabs.add(self.checkins_section, text="Check-ins")
+        self.checkins_section.pack(fill="both", expand=True)
 
-        self.mount_drawer(row=1, column=2)
+        self._pages = {
+            "overview": overview_page,
+            "roadmap": roadmap_page,
+            "tasks": tasks_page,
+            "checkins": checkins_page,
+            "comments": comments_page,
+        }
+
+        self.drawer.grid(row=0, column=1, sticky="nsew", padx=(8, 8), pady=8)
+
+    def _on_nav(self, route: str) -> None:
+        if route == "reports":
+            self._show_charts()
+            return
+        self._navigate(route)
+
+    def _navigate(self, route: str) -> None:
+        page = self._pages.get(route)
+        if page is None or route == self._current_page:
+            return
+
+        for frame in self._pages.values():
+            frame.pack_forget()
+
+        page.pack(fill="both", expand=True)
+        self._current_page = route
 
     def _refresh_teams(self) -> None:
         teams = (
@@ -140,15 +215,19 @@ class StudentDashboard(DashboardBase):
             self.roadmap_section.team_select.current(0)
             self._load_roadmap()
         else:
-            self.current_team_id = None
-            self.current_roadmap_id = None
-            self.roadmap_section.set_status("No roadmap")
-            self.task_section.set_task_rows([])
-            self.comments_section.set_comment_rows([])
-            self.task_section.set_update_rows([])
-            self.roadmap_section.clear_tree()
-            self.checkins_section.set_rows([])
-            self.checkins_section.set_progress(0, 0, 0)
+            self._clear_team_context()
+
+    def _clear_team_context(self) -> None:
+        self.current_team_id = None
+        self.current_roadmap_id = None
+        self.current_roadmap_status = None
+        self.roadmap_section.set_status("No roadmap")
+        self.task_section.set_task_rows([])
+        self.comments_section.set_comment_rows([])
+        self.task_section.set_update_rows([])
+        self.roadmap_section.clear_tree()
+        self.checkins_section.set_rows([])
+        self.checkins_section.set_progress(0, 0, 0)
 
     def _refresh_students(self) -> None:
         self.active_student_id = self.current_user.id
@@ -168,6 +247,118 @@ class StudentDashboard(DashboardBase):
         invites = self.team_service.list_invitations_for_user(self.active_student_id)
         rows = [(i["id"], i["team"], i["status"]) for i in invites]
         self.roadmap_section.set_invite_rows(rows)
+
+    def _class_options_for_team_creation(self) -> tuple[list[str], dict[str, int]]:
+        classes = self.class_service.list_classes()
+        options: list[str] = []
+        mapping: dict[str, int] = {}
+        for class_item in classes:
+            label = f"{class_item['name']} ({class_item['term']})"
+            options.append(label)
+            mapping[label] = int(class_item["id"])
+        return options, mapping
+
+    def _create_team(self) -> None:
+        class_options, class_mapping = self._class_options_for_team_creation()
+        if not class_options:
+            messagebox.showwarning("No classes", "No classes are available yet.")
+            return
+
+        dialog = FormDialog(
+            self,
+            title="Create Team",
+            subtitle="Create a team and become its principal.",
+        )
+        dialog.add_text("team_name", label="Team Name")
+        dialog.add_select("class", label="Class", values=class_options)
+
+        def save() -> None:
+            team_name = dialog.value("team_name")
+            class_label = dialog.value("class")
+            class_id = class_mapping.get(class_label)
+
+            if not team_name:
+                messagebox.showwarning("Missing data", "Enter a team name.")
+                return
+            if not class_id:
+                messagebox.showwarning("Missing class", "Select a class.")
+                return
+
+            team_id = self.team_service.create_team(
+                class_id,
+                team_name,
+                self.current_user.id,
+            )
+            self.team_service.update_team_principal(team_id, self.current_user.id)
+            dialog.destroy()
+
+            self._refresh_teams()
+            target_label = None
+            for label, choice in self.team_choices.items():
+                if choice.id == team_id:
+                    target_label = label
+                    break
+            if target_label:
+                self.roadmap_section.team_select.set(target_label)
+                self._load_roadmap()
+
+        dialog.add_actions(save, confirm_text="Create")
+
+    def _invite_student(self) -> None:
+        if not self.current_team_id:
+            messagebox.showwarning("No team", "Select a team first.")
+            return
+
+        team = self.team_service.get_team(self.current_team_id)
+        if not team or int(team.get("principal_user_id") or 0) != self.current_user.id:
+            messagebox.showwarning(
+                "Not allowed",
+                "Only the team principal can invite students.",
+            )
+            return
+
+        members = self.team_service.list_team_members(self.current_team_id)
+        member_ids = {int(member["id"]) for member in members}
+        students = self.class_service.list_users(role="student")
+        eligible = [
+            student
+            for student in students
+            if int(student["id"]) not in member_ids
+            and int(student["id"]) != self.current_user.id
+        ]
+        if not eligible:
+            messagebox.showwarning(
+                "No eligible students",
+                "All students are already on the team or unavailable.",
+            )
+            return
+
+        options: list[str] = []
+        mapping: dict[str, int] = {}
+        for student in eligible:
+            label = f"{student['name']} ({student['email']})"
+            options.append(label)
+            mapping[label] = int(student["id"])
+
+        dialog = FormDialog(
+            self,
+            title="Invite Student",
+            subtitle="Send a team invitation to a student.",
+        )
+        dialog.add_select("student", label="Student", values=options)
+
+        def send_invite() -> None:
+            label = dialog.value("student")
+            user_id = mapping.get(label)
+            if not user_id:
+                messagebox.showwarning("No student", "Select a student to invite.")
+                return
+            self.team_service.create_invitation(self.current_team_id, user_id)
+            dialog.destroy()
+            self._refresh_invitations()
+            messagebox.showinfo("Invite sent", "Student invitation has been sent.")
+
+        dialog.add_actions(send_invite, confirm_text="Send Invite")
 
     def _accept_invite(self) -> None:
         invite_id = self.roadmap_section.selected_invite_id()
@@ -299,23 +490,11 @@ class StudentDashboard(DashboardBase):
         self._refresh_stats()
 
     def _refresh_roadmap_tree(self) -> None:
-        for row in self.roadmap_section.tree.get_children():
-            self.roadmap_section.tree.delete(row)
         if not self.current_roadmap_id:
+            self.roadmap_section.set_roadmap_tree([])
             return
         phases = self.roadmap_service.list_phases_with_tasks(self.current_roadmap_id)
-        for phase in phases:
-            phase_id = phase["id"]
-            phase_item = self.roadmap_section.tree.insert(
-                "", "end", iid=f"phase-{phase_id}", text=f"Phase: {phase['name']}"
-            )
-            for task in phase["tasks"]:
-                self.roadmap_section.tree.insert(
-                    phase_item,
-                    "end",
-                    iid=f"task-{task['id']}",
-                    text=f"Task: {task['title']} (w{task['weight']})",
-                )
+        self.roadmap_section.set_roadmap_tree(phases)
 
     def _refresh_task_list(self) -> None:
         if not self.current_roadmap_id:
@@ -465,11 +644,12 @@ class StudentDashboard(DashboardBase):
             modal.destroy()
             self._refresh_comments()
 
-        bind_modal_keys(modal, save)
-        Button(modal.actions, text="Cancel", command=modal.destroy).pack(
-            side="right", padx=4
-        )
-        Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+        self._add_modal_save_actions(modal, save)
+
+    def _add_modal_save_actions(
+        self, modal: Modal, on_confirm, *, confirm_text: str = "Save"
+    ) -> None:
+        add_modal_actions(modal, on_confirm, confirm_text=confirm_text)
 
     def _refresh_updates(self) -> None:
         task_id = self._selected_task_id()
@@ -587,11 +767,7 @@ class StudentDashboard(DashboardBase):
             modal.destroy()
             self._refresh_roadmap_tree()
 
-        bind_modal_keys(modal, save)
-        Button(modal.actions, text="Cancel", command=modal.destroy).pack(
-            side="right", padx=4
-        )
-        Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+        self._add_modal_save_actions(modal, save)
 
     def _delete_phase(self) -> None:
         phase_id = self._selected_phase_id()
@@ -630,11 +806,7 @@ class StudentDashboard(DashboardBase):
             self._refresh_roadmap_tree()
             self._refresh_task_list()
 
-        bind_modal_keys(modal, save)
-        Button(modal.actions, text="Cancel", command=modal.destroy).pack(
-            side="right", padx=4
-        )
-        Button(modal.actions, text="Save", command=save).pack(side="right", padx=4)
+        self._add_modal_save_actions(modal, save)
 
     def _delete_task(self) -> None:
         task_id = self._selected_task_id()

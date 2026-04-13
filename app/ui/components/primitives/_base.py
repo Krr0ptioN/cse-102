@@ -10,6 +10,7 @@ except Exception:  # pragma: no cover - optional dependency
     ctk = None
 
 from app.design_system.semantic_tokens import semantic_colors
+from app.design_system.typography import Typography
 
 
 def use_ctk(master=None) -> bool:
@@ -29,12 +30,19 @@ def use_ctk(master=None) -> bool:
 def tk_style(master) -> ttk.Style:
     style = ttk.Style(master)
     colors = semantic_colors()
+
+    body_font = (Typography.primary_font_family(), 10)
+    heading_font = (Typography.primary_font_family(), 10, "bold")
+
     style.configure(
         "Ds.TCombobox",
         fieldbackground=colors.surface,
         background=colors.surface,
         foreground=colors.text,
         bordercolor=colors.border,
+        arrowsize=14,
+        padding=6,
+        font=body_font,
     )
     style.configure(
         "Ds.Treeview",
@@ -42,11 +50,29 @@ def tk_style(master) -> ttk.Style:
         fieldbackground=colors.surface,
         foreground=colors.text,
         bordercolor=colors.border,
+        rowheight=30,
+        borderwidth=1,
+        relief="solid",
+        font=body_font,
     )
     style.configure(
         "Ds.Treeview.Heading",
         background=colors.panel,
         foreground=colors.text,
+        bordercolor=colors.border,
+        relief="flat",
+        padding=(10, 8),
+        font=heading_font,
+    )
+    style.map(
+        "Ds.Treeview",
+        background=[("selected", colors.primary_soft)],
+        foreground=[("selected", colors.text)],
+    )
+    style.map(
+        "Ds.Treeview.Heading",
+        background=[("active", colors.surface)],
+        foreground=[("active", colors.text)],
     )
     return style
 

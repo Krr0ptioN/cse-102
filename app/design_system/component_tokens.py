@@ -76,3 +76,14 @@ def card_tokens() -> dict[str, str | int]:
         "border": colors.border,
         "radius": radius.none,
     }
+
+
+def card_size_tokens() -> dict[str, dict[str, int]]:
+    """Named card dimensions in pixels."""
+
+    return {
+        "sm": {"width": 280, "height": 140},
+        "md": {"width": 360, "height": 200},
+        "lg": {"width": 480, "height": 280},
+        "xl": {"width": 640, "height": 360},
+    }

@@ -1,10 +1,14 @@
-from app.ui.components.actions import ButtonBar, bind_modal_keys
+from app.ui.components.actions import ButtonBar, add_modal_actions, bind_modal_keys
 from app.ui.components.cards import DetailsDrawer, StatCard
 from app.ui.components.composed import (
     AuthCard,
     EmptyState,
+    FormDialog,
     FormField,
     SectionHeader,
+    SignInAuthCard,
+    SignUpAuthCard,
+    ToggleSelectionList,
     topbar_action,
 )
 from app.ui.components.drawers import TeamDrawer
@@ -49,6 +53,7 @@ __all__ = [
     "LabeledEntry",
     "LabeledCombobox",
     "ButtonBar",
+    "add_modal_actions",
     "bind_modal_keys",
     "Button",
     "Input",
@@ -63,8 +68,12 @@ __all__ = [
     "Dialog",
     "Table",
     "FormField",
+    "FormDialog",
+    "ToggleSelectionList",
     "SectionHeader",
     "EmptyState",
     "AuthCard",
+    "SignInAuthCard",
+    "SignUpAuthCard",
     "topbar_action",
 ]

@@ -5,7 +5,7 @@ from tkinter import messagebox
 
 from app.ui.teacher import RoadmapReviewSection
 from app.ui.forms import CommentForm
-from app.ui.components import Button, Modal, bind_modal_keys
+from app.ui.components import Modal, add_modal_actions
 
 
 class TeacherRoadmapsPage(tk.Frame):
@@ -27,7 +27,7 @@ class TeacherRoadmapsPage(tk.Frame):
             self._approve_roadmap,
             self._refresh_comments,
         )
-        self.roadmap_section.pack(fill="both", expand=True, padx=8, pady=8)
+        self.roadmap_section.pack(fill="both", expand=True)
 
     def _selected_roadmap_id(self) -> int | None:
         return self.roadmap_section.selected_roadmap_id()
@@ -74,13 +74,7 @@ class TeacherRoadmapsPage(tk.Frame):
             modal.destroy()
             self._refresh_comments()
 
-        bind_modal_keys(modal, save)
-        Button(
-            modal.actions, text="Cancel", command=modal.destroy, variant="outline"
-        ).pack(side="right", padx=4)
-        Button(modal.actions, text="Save", command=save, size="sm").pack(
-            side="right", padx=4
-        )
+        add_modal_actions(modal, save, confirm_text="Save")
 
     def _approve_roadmap(self) -> None:
         roadmap_id = self._selected_roadmap_id()

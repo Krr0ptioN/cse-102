@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.ui.components import ButtonBar, Section
+from app.ui.components import ButtonBar, DataTable, Section
 from app.ui.forms import CheckinForm
 
 
@@ -18,7 +18,9 @@ class StudentCheckinsSection(Section):
         progress_row = tk.Frame(self.body)
         progress_row.pack(fill="x", pady=4)
         tk.Label(progress_row, text="Progress").pack(side="left", padx=4)
-        self.progress = ttk.Progressbar(progress_row, orient="horizontal", length=180, mode="determinate")
+        self.progress = ttk.Progressbar(
+            progress_row, orient="horizontal", length=180, mode="determinate"
+        )
         self.progress.pack(side="left", padx=6)
         self.progress_label = tk.Label(progress_row, text="0%")
         self.progress_label.pack(side="left", padx=4)
@@ -37,15 +39,11 @@ class StudentCheckinsSection(Section):
         actions.pack(fill="x", pady=6)
         actions.add("Submit Check-in", self.on_submit)
 
-        self.table = ttk.Treeview(
+        self.table = DataTable(
             self.body,
-            columns=("Id", "Week", "Status", "Progress", "Submitted"),
-            show="headings",
+            ["Id", "Week", "Status", "Progress", "Submitted"],
             height=6,
         )
-        for col in ("Id", "Week", "Status", "Progress", "Submitted"):
-            self.table.heading(col, text=col)
-            self.table.column(col, anchor="w", width=120, stretch=True)
         self.table.pack(fill="both", expand=True, pady=6)
 
     def set_progress(self, percent: int, done: int, total: int) -> None:
@@ -63,7 +61,4 @@ class StudentCheckinsSection(Section):
         return self.form.validate()
 
     def set_rows(self, rows: list[tuple]) -> None:
-        for item in self.table.get_children():
-            self.table.delete(item)
-        for row in rows:
-            self.table.insert("", "end", values=row)
+        self.table.set_rows(rows)

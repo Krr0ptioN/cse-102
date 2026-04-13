@@ -3,6 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 
 from app.design_system.semantic_tokens import semantic_colors
+from app.design_system.typography import Typography
 from app.design_system.variants import normalize_option
 from app.ui.components.primitives._base import ctk, use_ctk
 
@@ -26,6 +27,8 @@ def Alert(  # noqa: N802
         "danger": ("#fee2e2", colors.text),
     }
     bg, fg = tone[selected]
+    title_font = (Typography.primary_font_family(), 12, "bold")
+    title_font_tk = (Typography.primary_font_family(), 11, "bold")
 
     if use_ctk(master) and ctk is not None:
         container = ctk.CTkFrame(
@@ -40,7 +43,7 @@ def Alert(  # noqa: N802
             container,
             text=title,
             text_color=fg,
-            font=("", 12, "bold"),
+            font=title_font,
         ).grid(row=0, column=0, sticky="w", padx=12, pady=(10, 4))
         if description:
             ctk.CTkLabel(
@@ -58,7 +61,7 @@ def Alert(  # noqa: N802
         highlightthickness=1,
         bd=0,
     )
-    tk.Label(container, text=title, bg=bg, fg=fg, font=("", 11, "bold")).pack(
+    tk.Label(container, text=title, bg=bg, fg=fg, font=title_font_tk).pack(
         anchor="w", padx=12, pady=(10, 4)
     )
     if description:

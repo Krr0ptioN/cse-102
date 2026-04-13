@@ -1,7 +1,7 @@
 from app.ui.components.primitives.alert import Alert
 from app.ui.components.primitives.badge import Badge
 from app.ui.components.primitives.button import Button, BUTTON_SIZES, BUTTON_VARIANTS
-from app.ui.components.primitives.card import Card
+from app.ui.components.primitives.card import CARD_SIZES, Card
 from app.ui.components.primitives.dialog import Dialog
 from app.ui.components.primitives.input import Input, INPUT_SIZES
 from app.ui.components.primitives.label import Label, LABEL_VARIANTS
@@ -17,6 +17,7 @@ __all__ = [
     "BUTTON_SIZES",
     "BUTTON_VARIANTS",
     "Card",
+    "CARD_SIZES",
     "Dialog",
     "Input",
     "INPUT_SIZES",

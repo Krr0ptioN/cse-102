@@ -58,14 +58,14 @@ class Sidebar(tk.Frame):
 
         tk.Label(
             self,
-            text="Lifecycle",
+            text="Assignment Assistant",
             font=(FONT_FAMILY, 16, "bold"),
             bg=colors["sidebar"],
             fg=colors["text"],
         ).pack(anchor="w", padx=16, pady=(16, 6))
         tk.Label(
             self,
-            text="Project Manager",
+            text="Teacher View",
             font=(FONT_FAMILY, 9),
             bg=colors["sidebar"],
             fg=colors["muted"],

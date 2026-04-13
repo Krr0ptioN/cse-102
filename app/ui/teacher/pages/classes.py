@@ -37,7 +37,7 @@ class TeacherClassesPage(tk.Frame):
         )
         header.pack(fill="x", padx=12, pady=(12, 8))
 
-        create_card = Card(self, padx=12, pady=10)
+        create_card = Card(self)
         create_card.pack(fill="x", padx=12, pady=(0, 10))
 
         tk.Label(

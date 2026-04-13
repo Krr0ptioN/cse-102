@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 import tkinter as tk
 
+from app.design_system.typography import Typography
+
 try:
     import customtkinter as ctk
     from app.ui.design.theme import apply_ctk_theme
@@ -17,6 +19,7 @@ except Exception:  # pragma: no cover
 
 
 def resolve_root_class():
+    Typography.bootstrap_fonts()
     ui_mode = os.getenv("APP_UI", "ctk").lower()
     if ctk is not None and ui_mode == "ctk":
         return ctk.CTk
@@ -26,5 +29,8 @@ def resolve_root_class():
 def apply_root_theme(root) -> None:
     if ctk is not None and isinstance(root, ctk.CTk) and apply_ctk_theme:
         apply_ctk_theme(root)
+        # Keep legacy Tk/ttk widgets styled in mixed CTk+Tk screens.
+        if apply_tk_theme is not None:
+            apply_tk_theme(root)
     elif apply_tk_theme is not None:
         apply_tk_theme(root)
