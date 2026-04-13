@@ -13,6 +13,9 @@ if ([string]::IsNullOrWhiteSpace($ScriptDir)) {
 }
 
 $script:PythonLauncher = ""
+$script:PythonLauncherArgs = @()
+$script:RequiredPythonMajor = 3
+$script:RequiredPythonMinor = 14
 
 function Show-Usage {
     Write-Host "Usage: .\make.ps1 <task> [-NoReset]"
@@ -39,20 +42,27 @@ function Show-Usage {
 
 function Resolve-PythonLauncher {
     if (Get-Command py -ErrorAction SilentlyContinue) {
-        return "py"
+        & py "-$($script:RequiredPythonMajor).$($script:RequiredPythonMinor)" --version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $script:PythonLauncher = "py"
+            $script:PythonLauncherArgs = @("-$($script:RequiredPythonMajor).$($script:RequiredPythonMinor)")
+            return
+        }
     }
     if (Get-Command python -ErrorAction SilentlyContinue) {
-        return "python"
+        & python -c "import sys; raise SystemExit(0 if sys.version_info >= ($($script:RequiredPythonMajor), $($script:RequiredPythonMinor)) else 1)" *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $script:PythonLauncher = "python"
+            $script:PythonLauncherArgs = @()
+            return
+        }
     }
-    throw "Python 3.11+ is required but was not found in PATH."
+    throw "Python $($script:RequiredPythonMajor).$($script:RequiredPythonMinor)+ is required. Install Python $($script:RequiredPythonMajor).$($script:RequiredPythonMinor) and re-run."
 }
 
 function Assert-Python {
-    $script:PythonLauncher = Resolve-PythonLauncher
-    & $script:PythonLauncher --version
-    if ($LASTEXITCODE -ne 0) {
-        throw "Unable to execute Python launcher '$script:PythonLauncher'."
-    }
+    Resolve-PythonLauncher
+    Invoke-Strict -Executable $script:PythonLauncher -Arguments @($script:PythonLauncherArgs + @("--version"))
 }
 
 function Get-VenvPython {
@@ -80,6 +90,14 @@ function Assert-Venv {
     $venvPython = Get-VenvPython
     if (-not (Test-Path $venvPython)) {
         throw "Virtual environment not found. Run '.\make.ps1 setup' first."
+    }
+    $requiredVersion = "$($script:RequiredPythonMajor).$($script:RequiredPythonMinor)"
+    $venvVersion = (& $venvPython -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to inspect virtual environment Python version."
+    }
+    if ($venvVersion -ne $requiredVersion) {
+        throw "Virtual environment Python version is $venvVersion, but $requiredVersion is required. Run '.\make.ps1 clean' then '.\make.ps1 setup'."
     }
     return $venvPython
 }
@@ -112,7 +130,7 @@ function Install-Dependencies {
         [switch]$IncludeBuild
     )
 
-    Invoke-Strict -Executable $script:PythonLauncher -Arguments @("-m", "venv", ".venv")
+    Invoke-Strict -Executable $script:PythonLauncher -Arguments @($script:PythonLauncherArgs + @("-m", "venv", ".venv"))
     $venvPython = Get-VenvPython
 
     Invoke-Strict -Executable $venvPython -Arguments @(

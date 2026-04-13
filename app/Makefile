@@ -6,15 +6,15 @@ PYTHONPATH := ..
 .PHONY: setup install-dev install-build run test db-setup seed db-status compile clean
 
 setup:
-	$(UV) venv .venv
+	$(UV) venv --python 3.14 .venv
 	$(UV) pip install -r requirements.txt
 
 install-dev:
-	$(UV) venv .venv
+	$(UV) venv --python 3.14 .venv
 	$(UV) pip install -r requirements.txt -r requirements-dev.txt
 
 install-build:
-	$(UV) venv .venv
+	$(UV) venv --python 3.14 .venv
 	$(UV) pip install -r requirements.txt -r requirements-build.txt
 
 run:

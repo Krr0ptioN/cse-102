@@ -3,7 +3,7 @@
 This directory is the root of the application codebase. All runtime code, tests, and tooling live here.
 
 ### Prerequisites
-- Python 3.11+ (Tkinter included; install `python3-tk` via your OS package manager if missing)
+- Python 3.14+ (Tkinter included; install `python3-tk` via your OS package manager if missing)
 - Linux/macOS: [uv](https://docs.astral.sh/uv/) + `make` (optional but recommended)
 - Windows: PowerShell + Python launcher (`py` or `python`) (no uv required)
 
