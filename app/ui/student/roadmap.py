@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.libs.ui_kit.components import (
+from app.libs.ui_kit import (
     Button,
     ButtonBar,
     Card,
@@ -12,8 +12,8 @@ from app.libs.ui_kit.components import (
     LabeledCombobox,
     LabeledEntry,
     Section,
+    tk_style,
 )
-from app.libs.ui_kit.components.primitives._base import tk_style
 from app.ui.student.forms import TaskForm
 
 

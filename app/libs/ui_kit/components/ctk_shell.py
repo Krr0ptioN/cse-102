@@ -26,7 +26,13 @@ class CtkAppShell(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-        self.sidebar = CtkSidebar(self, on_back, nav_items or [], on_nav)
+        self.sidebar = CtkSidebar(
+            self,
+            on_back,
+            nav_items or [],
+            on_nav,
+            context_title=title,
+        )
         self.sidebar.grid(row=0, column=0, sticky="nsw")
 
         self.main = ctk.CTkFrame(self, fg_color=colors["bg"], corner_radius=0)
@@ -42,6 +48,12 @@ class CtkAppShell(ctk.CTkFrame):
         self.content.grid_columnconfigure(0, weight=1)
         self.content.grid_columnconfigure(1, weight=1)
 
+        if nav_items:
+            self.set_active_nav(nav_items[0][1])
+
+    def set_active_nav(self, route: str | None) -> None:
+        self.sidebar.set_active(route)
+
 
 class CtkSidebar(ctk.CTkFrame):
     def __init__(
@@ -50,30 +62,54 @@ class CtkSidebar(ctk.CTkFrame):
         on_back,
         nav_items: list[tuple[str, str]],
         on_nav=None,
+        context_title: str | None = None,
     ) -> None:
         colors = palette()
         super().__init__(
-            master, width=240, fg_color=colors["surface_alt"], corner_radius=0
+            master,
+            width=260,
+            fg_color=colors["surface_alt"],
+            corner_radius=0,
+            border_width=1,
+            border_color=colors["border"],
         )
         self.grid_propagate(False)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self._colors = colors
         self.on_nav = on_nav
+        self._buttons: dict[str, ctk.CTkButton] = {}
+        self._active_key: str | None = None
 
         pad = spacing("md")
-        ctk.CTkLabel(
+        header = ctk.CTkFrame(
             self,
-            text="Lifecycle",
+            fg_color=colors["surface_alt"],
+            corner_radius=0,
+        )
+        header.grid(row=0, column=0, sticky="ew", padx=pad, pady=(pad, spacing("sm")))
+        ctk.CTkLabel(
+            header,
+            text="Assignment Assistant",
             font=(Typography.primary_font_family(), 16, "bold"),
             text_color=colors["text"],
-        ).pack(anchor="w", padx=pad, pady=(pad, 4))
+        ).pack(anchor="w")
         ctk.CTkLabel(
-            self,
-            text="Project Manager",
+            header,
+            text=context_title or "Workspace",
             font=(Typography.primary_font_family(), 11),
             text_color=colors["muted"],
-        ).pack(anchor="w", padx=pad, pady=(0, pad))
+        ).pack(anchor="w", pady=(2, 0))
+
+        ctk.CTkLabel(
+            self,
+            text="Navigation",
+            font=(Typography.primary_font_family(), 10, "bold"),
+            text_color=colors["muted"],
+        ).grid(row=1, column=0, sticky="w", padx=pad, pady=(0, spacing("xs")))
 
         self.nav = ctk.CTkFrame(self, fg_color=colors["surface_alt"])
-        self.nav.pack(fill="x", padx=pad)
+        self.nav.grid(row=2, column=0, sticky="nsew", padx=pad)
 
         for label, key in nav_items:
             btn = ctk.CTkButton(
@@ -84,25 +120,53 @@ class CtkSidebar(ctk.CTkFrame):
                 hover_color=colors["accent_soft"],
                 text_color=colors["text"],
                 anchor="w",
-                corner_radius=0,
+                corner_radius=8,
                 border_width=1,
                 border_color=colors["border"],
                 height=36,
-                command=(lambda k=key: self.on_nav(k)) if self.on_nav else None,
+                command=(lambda k=key: self._handle_nav(k)),
             )
             btn.pack(fill="x", pady=spacing("xxs"))
+            self._buttons[key] = btn
 
         ctk.CTkButton(
             self,
             text="Back",
-            fg_color=colors["accent"],
-            hover_color=colors["accent"],
-            text_color="#ffffff",
+            fg_color=colors["surface"],
+            hover_color=colors["surface_alt"],
+            text_color=colors["text"],
             bg_color=colors["surface_alt"],
-            corner_radius=0,
+            corner_radius=8,
+            border_width=1,
+            border_color=colors["border"],
             height=40,
             command=on_back,
-        ).pack(side="bottom", fill="x", padx=pad, pady=spacing("md"))
+        ).grid(row=3, column=0, sticky="ew", padx=pad, pady=spacing("md"))
+
+    def _handle_nav(self, key: str) -> None:
+        if self.on_nav:
+            self.on_nav(key)
+
+    def set_active(self, key: str | None) -> None:
+        self._active_key = key if key in self._buttons else None
+        for route, button in self._buttons.items():
+            self._apply_button_style(button, active=route == self._active_key)
+
+    def _apply_button_style(self, button: ctk.CTkButton, *, active: bool) -> None:
+        if active:
+            button.configure(
+                fg_color=self._colors["accent_soft"],
+                text_color=self._colors["accent"],
+                hover_color=self._colors["accent_soft"],
+                border_color=self._colors["accent"],
+            )
+            return
+        button.configure(
+            fg_color=self._colors["surface"],
+            text_color=self._colors["text"],
+            hover_color=self._colors["accent_soft"],
+            border_color=self._colors["border"],
+        )
 
 
 class CtkTopbar(ctk.CTkFrame):

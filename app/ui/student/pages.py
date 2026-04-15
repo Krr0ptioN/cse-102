@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.components import Button, Card, SectionHeader
+from app.libs.ui_kit import Button, Card, SectionHeader
 from app.ui.student.stats import StudentStatsRow
 
 

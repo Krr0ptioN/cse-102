@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import tkinter as tk
 from dataclasses import dataclass
 from tkinter import messagebox
 from typing import Callable, Iterable
 
-from app.libs.ui_kit.components import DataTable
+from app.libs.ui_kit import DataTable
 
 
 # ---- Notifier ---------------------------------------------------------------

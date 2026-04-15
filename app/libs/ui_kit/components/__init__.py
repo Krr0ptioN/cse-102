@@ -14,6 +14,7 @@ from app.libs.ui_kit.components.composed import (
 from app.libs.ui_kit.components.drawers import TeamDrawer
 from app.libs.ui_kit.components.inputs import LabeledCombobox, LabeledEntry
 from app.libs.ui_kit.components.layout import AppShell, Section, Sidebar, Topbar
+from app.libs.ui_kit.components.positioning import Flex, Grid
 from app.libs.ui_kit.components.primitives import (
     Alert,
     Badge,
@@ -27,6 +28,7 @@ from app.libs.ui_kit.components.primitives import (
     Tabs,
     TextArea,
     add_tab,
+    tk_style,
 )
 
 # Optional CTk primitives (available when customtkinter is installed and APP_UI=ctk)
@@ -45,6 +47,8 @@ __all__ = [
     "Sidebar",
     "Topbar",
     "Section",
+    "Flex",
+    "Grid",
     "DataTable",
     "StatCard",
     "DetailsDrawer",
@@ -67,6 +71,7 @@ __all__ = [
     "add_tab",
     "Dialog",
     "Table",
+    "tk_style",
     "FormField",
     "FormDialog",
     "ToggleSelectionList",

@@ -13,7 +13,7 @@ from app.ui.shared.paths import ensure_local_db_path
 from app.core.bootstrap import AppBootstrap
 from app.core.services.auth import AuthenticatedUser
 from app.libs.logger import get_logger
-from app.libs.ui_kit.components.composed import SignInAuthCard, SignUpAuthCard
+from app.libs.ui_kit import SignInAuthCard, SignUpAuthCard
 from app.ui.shared.root_factory import resolve_root_class, apply_root_theme
 from app.ui.student.dashboard import StudentDashboard
 from app.ui.teacher.dashboard import TeacherDashboard

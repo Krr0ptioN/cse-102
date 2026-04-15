@@ -9,6 +9,7 @@ from app.libs.ui_kit.components.primitives.select import Select
 from app.libs.ui_kit.components.primitives.table import Table
 from app.libs.ui_kit.components.primitives.tabs import Tabs, add_tab
 from app.libs.ui_kit.components.primitives.textarea import TextArea
+from app.libs.ui_kit.components.primitives._base import tk_style
 
 __all__ = [
     "Alert",
@@ -28,4 +29,5 @@ __all__ = [
     "Tabs",
     "TextArea",
     "add_tab",
+    "tk_style",
 ]

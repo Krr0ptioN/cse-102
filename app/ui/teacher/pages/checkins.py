@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.libs.ui_kit.components import Modal, Section, add_modal_actions
+from app.libs.ui_kit import Modal, Section, add_modal_actions
 from app.ui.shared.forms import CommentForm
 from app.ui.teacher.forms import ApprovalNoteForm
 from app.ui.teacher import CheckinsSection

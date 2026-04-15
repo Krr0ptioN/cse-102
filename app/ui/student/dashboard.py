@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import tkinter as tk
 from datetime import date, timedelta
 from tkinter import messagebox
 
@@ -12,7 +11,7 @@ from app.core.services.team import TeamService
 from app.core.services.classes import ClassService
 from app.core.services.validation import validate_roadmap
 from app.ui.shared.charts import show_reports_window
-from app.libs.ui_kit.components import FormDialog, Modal, add_modal_actions
+from app.libs.ui_kit import Flex, FormDialog, Grid, Input, Label, Modal, add_modal_actions
 from app.ui.shared.dashboard_base import DashboardBase
 from app.ui.shared.forms import CommentForm
 from app.ui.student.forms import TaskForm
@@ -23,7 +22,6 @@ from app.ui.student import (
     StudentCommentsSection,
     TaskSection,
 )
-from app.libs.ui_kit.design_system.typography import Typography
 from app.ui.shared.vm.helpers import (
     Choice,
     Notifier,
@@ -63,7 +61,7 @@ class StudentDashboard(DashboardBase):
         self.team_choices: dict[str, Choice] = {}
         self.member_choices: dict[str, Choice] = {}
         self._current_page: str | None = None
-        self._pages: dict[str, tk.Frame] = {}
+        self._pages: dict[str, StudentOverviewPage | StudentSectionPage] = {}
 
         nav_items = [
             ("Overview", "overview"),
@@ -97,7 +95,7 @@ class StudentDashboard(DashboardBase):
         content.grid_columnconfigure(0, weight=1)
         content.grid_columnconfigure(1, weight=0, minsize=260)
 
-        self.page_host = tk.Frame(content, bg=content["bg"])
+        self.page_host = Flex(content, direction="column", gap=0)
         self.page_host.grid(row=0, column=0, sticky="nsew")
 
         overview_page = StudentOverviewPage(self.page_host, self._navigate)
@@ -189,6 +187,7 @@ class StudentDashboard(DashboardBase):
 
         page.pack(fill="both", expand=True)
         self._current_page = route
+        self.set_active_nav(route)
         self.log.info("Student view -> %s", route)
 
     def _refresh_teams(self) -> None:
@@ -440,7 +439,7 @@ class StudentDashboard(DashboardBase):
         phases = self.roadmap_service.list_phases_with_tasks(roadmap_id)
         sort_order = len(phases) + 1
         self.roadmap_service.create_phase(roadmap_id, name, sort_order)
-        self.roadmap_section.phase_entry.delete(0, tk.END)
+        self.roadmap_section.phase_entry.delete(0, "end")
         self._refresh_roadmap_tree()
 
     def _add_task(self) -> None:
@@ -723,29 +722,57 @@ class StudentDashboard(DashboardBase):
         )
         if team:
             self._render_team_header(team)
-        tk.Label(self.drawer.body, text=f"Task #{row['id']}").pack(anchor="w")
-        tk.Label(self.drawer.body, text=f"Title: {row['title']}").pack(anchor="w")
-        tk.Label(self.drawer.body, text=f"Status: {row['status']}").pack(anchor="w")
-        tk.Label(self.drawer.body, text=f"Weight: {row['weight']}").pack(anchor="w")
-        tk.Label(
+        body_bg = self.drawer.body["bg"]
+        Label(self.drawer.body, text=f"Task #{row['id']}", bg=body_bg).pack(anchor="w")
+        Label(self.drawer.body, text=f"Title: {row['title']}", bg=body_bg).pack(
+            anchor="w"
+        )
+        Label(self.drawer.body, text=f"Status: {row['status']}", bg=body_bg).pack(
+            anchor="w"
+        )
+        Label(self.drawer.body, text=f"Weight: {row['weight']}", bg=body_bg).pack(
+            anchor="w"
+        )
+        Label(
             self.drawer.body,
             text="Recent Updates",
-            font=(Typography.primary_font_family(), 10, "bold"),
+            weight="bold",
+            bg=body_bg,
         ).pack(anchor="w", pady=(10, 4))
         if not updates:
-            tk.Label(self.drawer.body, text="No updates yet").pack(anchor="w")
+            Label(
+                self.drawer.body,
+                text="No updates yet",
+                variant="muted",
+                bg=body_bg,
+            ).pack(anchor="w")
             return
         for upd in updates[:5]:
-            row = tk.Frame(self.drawer.body)
-            row.pack(fill="x", pady=2)
-            tk.Label(row, text="●", fg="#0f766e").pack(side="left")
-            tk.Label(
-                row,
-                text=f"{upd['user']}: {upd['text']}",
-                wraplength=200,
-                justify="left",
-            ).pack(side="left", padx=6)
-            tk.Label(row, text=upd["created_at"], fg="#5f6b68").pack(side="right")
+            update_row = Flex(self.drawer.body, direction="row", gap="xs", panel=True)
+            update_row.pack(fill="x", pady=2)
+            update_row.add(
+                Label(update_row, text="●", variant="accent", bg=update_row["bg"])
+            )
+            update_row.add(
+                Label(
+                    update_row,
+                    text=f"{upd['user']}: {upd['text']}",
+                    wraplength=200,
+                    justify="left",
+                    bg=update_row["bg"],
+                ),
+                grow=True,
+                fill="x",
+            )
+            update_row.push()
+            update_row.add(
+                Label(
+                    update_row,
+                    text=upd["created_at"],
+                    variant="muted",
+                    bg=update_row["bg"],
+                )
+            )
 
     def _edit_phase(self) -> None:
         phase_id = self._selected_phase_id()
@@ -753,9 +780,14 @@ class StudentDashboard(DashboardBase):
             messagebox.showwarning("No phase", "Select a phase first.")
             return
         modal = Modal(self, "Edit Phase")
-        tk.Label(modal.body, text="Phase Name").grid(row=0, column=0, sticky="w")
-        name_entry = tk.Entry(modal.body, width=24)
-        name_entry.grid(row=0, column=1, padx=6, pady=4)
+        form = Grid(modal.body, columns=2, gap="sm", panel=True)
+        form.pack(fill="x")
+        form.set_column_weights(0, 1)
+        Label(form, text="Phase Name", variant="muted", bg=form["bg"]).grid(
+            row=0, column=0, sticky="w"
+        )
+        name_entry = Input(form, width=24)
+        form.add(name_entry, row=0, column=1, sticky="ew")
         current = self.roadmap_section.tree.item(f"phase-{phase_id}", "text").replace(
             "Phase: ", ""
         )

@@ -4,7 +4,7 @@ from app.ui.teacher.roadmaps import RoadmapReviewSection
 from app.ui.teacher.stats import TeacherStatsRow
 from app.ui.teacher.students import StudentRosterSection
 from app.ui.teacher.teams import TeamSection
-from app.libs.ui_kit.components import TeamDrawer as TeacherDrawer
+from app.libs.ui_kit import TeamDrawer as TeacherDrawer
 
 __all__ = [
     "TeacherStatsRow",

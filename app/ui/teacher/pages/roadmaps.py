@@ -5,7 +5,7 @@ from tkinter import messagebox
 
 from app.ui.teacher import RoadmapReviewSection
 from app.ui.shared.forms import CommentForm
-from app.libs.ui_kit.components import Modal, add_modal_actions
+from app.libs.ui_kit import Modal, add_modal_actions
 
 
 class TeacherRoadmapsPage(tk.Frame):

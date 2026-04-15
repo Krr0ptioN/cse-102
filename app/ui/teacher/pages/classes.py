@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 from app.libs.ui_kit.design_system.tokens import palette
-from app.libs.ui_kit.components import Button, Card, EmptyState, Input, SectionHeader
+from app.libs.ui_kit import Button, Card, EmptyState, Input, SectionHeader
 
 
 class TeacherClassesPage(tk.Frame):

@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import messagebox
 
 from app.libs.logger import get_logger
-from app.libs.ui_kit.components.composed import topbar_action
-from app.libs.ui_kit.components import AppShell, TeamDrawer
+from app.libs.ui_kit import topbar_action
+from app.libs.ui_kit import AppShell, TeamDrawer
 from app.ui.shared.shell_factory import resolve_shell
 
 
@@ -69,6 +69,11 @@ class DashboardBase(tk.Frame):
 
     def add_topbar_button(self, text: str, command, side: str = "left") -> None:
         topbar_action(self.shell.topbar.actions, text=text, command=command, side=side)
+
+    def set_active_nav(self, route: str | None) -> None:
+        set_active = getattr(self.shell, "set_active_nav", None)
+        if callable(set_active):
+            set_active(route)
 
     def add_demo_button(self) -> None:
         self.add_topbar_button("Demo", self._show_demo_notice, side="right")

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import tkinter as tk
 from tkinter import messagebox
 
 from app.core.services.auth import AuthenticatedUser
@@ -10,7 +9,7 @@ from app.core.services.roadmap import RoadmapService
 from app.core.services.task import TaskService
 from app.core.services.team import TeamService
 from app.ui.shared.charts import show_reports_window
-from app.libs.ui_kit.components import Modal, add_modal_actions
+from app.libs.ui_kit import FormDialog
 from app.ui.shared.dashboard_base import DashboardBase
 from app.ui.teacher.pages.checkins import TeacherCheckinsPage
 from app.ui.teacher.pages.classes import TeacherClassesPage
@@ -104,9 +103,20 @@ class TeacherDashboard(DashboardBase):
             return
         self.swap_content(page)
         self._current_page = route
+        self.set_active_nav(route)
         self.log.info("Teacher view -> %s", route)
 
-    def _create_page(self, route: str) -> tk.Frame | None:
+    def _create_page(
+        self, route: str
+    ) -> (
+        TeacherHomePage
+        | TeacherClassesPage
+        | TeacherStudentsPage
+        | TeacherTeamsPage
+        | TeacherRoadmapsPage
+        | TeacherCheckinsPage
+        | None
+    ):
         return {
             "dashboard": TeacherHomePage(
                 self.shell.content,
@@ -160,24 +170,31 @@ class TeacherDashboard(DashboardBase):
         self._open_team_picker(teams)
 
     def _open_team_picker(self, teams: list[dict]) -> None:
-        modal = Modal(self, "Select Team")
-        listbox = tk.Listbox(modal.body, height=min(10, len(teams)))
+        options: list[str] = []
+        team_by_option: dict[str, dict] = {}
         for team in teams:
             principal = team.get("principal_name") or "-"
-            listbox.insert(tk.END, f"#{team['id']} · {team['name']} · {principal}")
-        listbox.pack(fill="both", expand=True, padx=6, pady=6)
+            label = f"#{team['id']} · {team['name']} · {principal}"
+            options.append(label)
+            team_by_option[label] = team
 
-        def choose_and_close() -> None:
-            selection = listbox.curselection()
-            if not selection:
+        dialog = FormDialog(
+            self,
+            title="Select Team",
+            subtitle="Choose a team to open report charts.",
+        )
+        dialog.add_select("team", label="Team", values=options, width=42)
+
+        def choose_and_open() -> None:
+            selection = dialog.value("team")
+            team = team_by_option.get(selection)
+            if not team:
                 messagebox.showwarning("No team", "Select a team to view reports.")
                 return
-            team = teams[selection[0]]
-            modal.destroy()
+            dialog.destroy()
             self._open_team_reports(team)
 
-        listbox.bind("<Double-Button-1>", lambda _e: choose_and_close())
-        add_modal_actions(modal, choose_and_close, confirm_text="Open")
+        dialog.add_actions(choose_and_open, confirm_text="Open")
 
     def _open_team_reports(self, team: dict) -> None:
         team_id = team["id"]

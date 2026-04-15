@@ -10,7 +10,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from app.libs.ui_kit.components import Button, Card, SectionHeader
+from app.libs.ui_kit import Button, Card, SectionHeader
 from app.libs.ui_kit.design_system.tokens import palette as design_palette
 from app.libs.ui_kit.design_system.typography import Typography
 

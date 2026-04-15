@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.components import StatCard
+from app.libs.ui_kit import StatCard
 
 
 class TeacherStatsRow(tk.Frame):
