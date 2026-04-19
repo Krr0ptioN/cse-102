@@ -3,17 +3,17 @@ from __future__ import annotations
 import os
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.typography import Typography
+from libs.ui_kit.design_system import Typography
 
 try:
     import customtkinter as ctk
-    from app.libs.ui_kit.design.theme import apply_ctk_theme
+    from libs.ui_kit.design.theme import apply_ctk_theme
 except Exception:  # pragma: no cover - fallback when CTk unavailable
     ctk = None
     apply_ctk_theme = None  # type: ignore
 
 try:
-    from app.libs.ui_kit.theme import apply_theme as apply_tk_theme
+    from libs.ui_kit.theme import apply_theme as apply_tk_theme
 except Exception:  # pragma: no cover
     apply_tk_theme = None  # type: ignore
 

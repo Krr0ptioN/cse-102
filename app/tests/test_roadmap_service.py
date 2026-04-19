@@ -1,7 +1,7 @@
-from app.core.db.connector import DBConnector
-from app.core.db.schema import init_db
-from app.core.repositories.roadmap_repository import RoadmapRepository
-from app.core.services.roadmap import RoadmapService
+from core.db.connector import DBConnector
+from core.db.schema import init_db
+from core.repositories import RoadmapRepository
+from core.services import RoadmapService
 
 
 def test_submit_and_approve(tmp_path):

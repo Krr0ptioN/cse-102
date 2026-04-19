@@ -9,8 +9,8 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     ctk = None
 
-from app.libs.ui_kit.design_system.semantic_tokens import semantic_colors
-from app.libs.ui_kit.design_system.typography import Typography
+from libs.ui_kit.design_system import semantic_colors
+from libs.ui_kit.design_system import Typography
 
 
 def use_ctk(master=None) -> bool:

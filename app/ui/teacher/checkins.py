@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit import (
+from libs.ui_kit import (
     Button,
     ButtonBar,
     Card,
@@ -11,7 +11,7 @@ from app.libs.ui_kit import (
     Label,
     SectionHeader,
 )
-from app.libs.ui_kit.theme import palette
+from libs.ui_kit.theme import palette
 
 
 class CheckinsSection(tk.Frame):

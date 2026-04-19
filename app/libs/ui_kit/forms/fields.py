@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit import LabeledCombobox, LabeledEntry
+from libs.ui_kit import LabeledCombobox, LabeledEntry
 
 
 class Field:

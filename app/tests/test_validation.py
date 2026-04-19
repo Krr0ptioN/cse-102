@@ -1,4 +1,4 @@
-from app.core.services.validation import validate_roadmap
+from core.services import validate_roadmap
 
 
 def test_roadmap_requires_three_phases():

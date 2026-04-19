@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.component_tokens import button_size_tokens, button_variants
-from app.libs.ui_kit.design_system.variants import resolve_variant
-from app.libs.ui_kit.components.primitives._base import ctk, use_ctk
+from libs.ui_kit.design_system import button_size_tokens, button_variants
+from libs.ui_kit.design_system import resolve_variant
+from libs.ui_kit import ctk, use_ctk
 
 
 BUTTON_VARIANTS = tuple(button_variants().keys())

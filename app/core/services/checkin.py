@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.core.repositories.checkin_repository import CheckinRepository
-from app.core.services.base import Service
+from core.repositories import CheckinRepository
+from .base import Service
 
 
 class CheckinService(Service):

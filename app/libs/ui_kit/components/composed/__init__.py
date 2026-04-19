@@ -1,9 +1,9 @@
-from app.libs.ui_kit.components.composed.auth import AuthCard, SignInAuthCard, SignUpAuthCard
-from app.libs.ui_kit.components.composed.empty_state import EmptyState
-from app.libs.ui_kit.components.composed.form_field import FormField
-from app.libs.ui_kit.components.composed.form_dialog import FormDialog, ToggleSelectionList
-from app.libs.ui_kit.components.composed.section_header import SectionHeader
-from app.libs.ui_kit.components.composed.topbar import topbar_action
+from libs.ui_kit import AuthCard, SignInAuthCard, SignUpAuthCard
+from libs.ui_kit import EmptyState
+from libs.ui_kit import FormField
+from libs.ui_kit import FormDialog, ToggleSelectionList
+from libs.ui_kit import SectionHeader
+from libs.ui_kit import topbar_action
 
 __all__ = [
     "AuthCard",

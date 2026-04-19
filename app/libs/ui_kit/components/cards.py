@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.typography import Typography
-from app.libs.ui_kit.theme import palette
+from libs.ui_kit.design_system import Typography
+from libs.ui_kit.theme import palette
 
 
 class StatCard(tk.Frame):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.ui_kit.forms.fields import Field
+from libs.ui_kit.forms import Field
 
 
 class Form:

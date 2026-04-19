@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.libs.ui_kit.design_system.core_tokens import core_colors
+from libs.ui_kit.design_system import core_colors
 
 
 @dataclass(frozen=True)

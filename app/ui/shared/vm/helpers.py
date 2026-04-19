@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from tkinter import messagebox
 from typing import Callable, Iterable
 
-from app.libs.ui_kit import DataTable
+from libs.ui_kit import DataTable
 
 
 # ---- Notifier ---------------------------------------------------------------

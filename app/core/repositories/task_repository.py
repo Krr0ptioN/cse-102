@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.core.repositories.base import Repository
+from .base import Repository
 
 
 class TaskRepository(Repository):

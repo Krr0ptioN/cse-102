@@ -8,18 +8,18 @@ try:
 except Exception:  # pragma: no cover - optional
     ctk = None
 
-from app.libs.ui_kit.components.adapters import is_ctk
-from app.libs.ui_kit.components.ctk_primitives import (
+from libs.ui_kit import is_ctk
+from libs.ui_kit import (
     CtkButton,
     CtkInput,
     CtkCard,
     CtkModal,
     CtkProgress,
 )
-from app.libs.ui_kit.components.layout import Section as TkSection
-from app.libs.ui_kit.components.modals import Modal as TkModal
-from app.libs.ui_kit.components.actions import ButtonBar as TkButtonBar
-from app.libs.ui_kit.theme import palette
+from libs.ui_kit import Section as TkSection
+from libs.ui_kit import Modal as TkModal
+from libs.ui_kit import ButtonBar as TkButtonBar
+from libs.ui_kit.theme import palette
 
 
 def Button(master, **kwargs):  # noqa: N802 - factory style

@@ -6,8 +6,8 @@ import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from app.core.repositories.auth_repository import AuthRepository
-from app.core.services.base import Service
+from core.repositories import AuthRepository
+from .base import Service
 
 
 @dataclass(frozen=True)

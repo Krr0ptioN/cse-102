@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.core.services.auth import AuthenticatedUser
+from core.services import AuthenticatedUser
 
 
 class SessionService:

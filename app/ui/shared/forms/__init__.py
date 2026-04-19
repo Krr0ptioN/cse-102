@@ -1,3 +1,3 @@
-from app.ui.shared.forms.comments import CommentForm
+from .comments import CommentForm
 
 __all__ = ["CommentForm"]

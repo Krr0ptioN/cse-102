@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-from app.core.db.connector import DBConnector
-from app.core.repositories.app_state_repository import AppStateRepository
-from app.core.repositories.auth_repository import AuthRepository
-from app.core.repositories.class_repository import ClassRepository
-from app.core.repositories.checkin_repository import CheckinRepository
-from app.core.repositories.roadmap_repository import RoadmapRepository
-from app.core.repositories.task_repository import TaskRepository
-from app.core.repositories.team_repository import TeamRepository
-from app.core.services.app_state import AppStateService
-from app.core.services.auth import AuthService
-from app.core.services.classes import ClassService
-from app.core.services.checkin import CheckinService
-from app.core.services.roadmap import RoadmapService
-from app.core.services.session import SessionService
-from app.core.services.task import TaskService
-from app.core.services.team import TeamService
-from app.libs.logger import get_logger
+from core.db.connector import DBConnector
+from core.repositories import AppStateRepository
+from core.repositories import AuthRepository
+from core.repositories import ClassRepository
+from core.repositories import CheckinRepository
+from core.repositories import RoadmapRepository
+from core.repositories import TaskRepository
+from core.repositories import TeamRepository
+from core.services import AppStateService
+from core.services import AuthService
+from core.services import ClassService
+from core.services import CheckinService
+from core.services import RoadmapService
+from core.services import SessionService
+from core.services import TaskService
+from core.services import TeamService
+from libs.logger import get_logger
 
 
 class ServiceFactory:

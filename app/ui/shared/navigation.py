@@ -5,7 +5,7 @@ from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.ui.shared.page import Page
+    from ui.shared.page import Page
 
 
 RouteKey = str

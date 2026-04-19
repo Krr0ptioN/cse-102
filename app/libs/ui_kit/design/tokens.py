@@ -2,7 +2,7 @@ from __future__ import annotations
 
 # Design tokens for the upcoming CustomTkinter UI overhaul.
 # Keep values ASCII-only to avoid font issues on some platforms.
-from app.libs.ui_kit.design_system.typography import Typography
+from libs.ui_kit.design_system import Typography
 
 PALETTE = {
     "bg": "#f4f6f8",

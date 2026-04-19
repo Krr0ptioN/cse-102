@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.libs.ui_kit import (
+from libs.ui_kit import (
     Button,
     ButtonBar,
     Card,
@@ -14,8 +14,8 @@ from app.libs.ui_kit import (
     SectionHeader,
     add_modal_actions,
 )
-from app.ui.teacher.forms import StudentForm
-from app.libs.ui_kit.theme import palette
+from ui.teacher.forms import StudentForm
+from libs.ui_kit.theme import palette
 
 
 class StudentRosterSection(tk.Frame):

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.core.repositories.team_repository import TeamRepository
-from app.core.services.base import Service
+from core.repositories import TeamRepository
+from .base import Service
 
 
 class TeamService(Service):

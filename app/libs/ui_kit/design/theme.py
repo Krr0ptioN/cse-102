@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
-from app.libs.ui_kit.design_system.typography import Typography
-from app.libs.ui_kit.design.tokens import PALETTE
+from libs.ui_kit.design_system import Typography
+from libs.ui_kit.design.tokens import PALETTE
 
 
 def apply_ctk_theme(root: ctk.CTk | None = None) -> None:

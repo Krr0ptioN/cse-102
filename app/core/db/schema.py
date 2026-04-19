@@ -1,4 +1,4 @@
-from app.core.db.connector import DBConnector
+from core.db.connector import DBConnector
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;

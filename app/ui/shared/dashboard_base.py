@@ -3,10 +3,10 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.libs.logger import get_logger
-from app.libs.ui_kit import topbar_action
-from app.libs.ui_kit import AppShell, TeamDrawer
-from app.ui.shared.shell_factory import resolve_shell
+from libs.logger import get_logger
+from libs.ui_kit import topbar_action
+from libs.ui_kit import AppShell, TeamDrawer
+from ui.shared import resolve_shell
 
 
 class DashboardBase(tk.Frame):

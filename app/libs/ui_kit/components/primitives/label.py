@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.semantic_tokens import semantic_colors
-from app.libs.ui_kit.design_system.typography import Typography
-from app.libs.ui_kit.design_system.variants import normalize_option
-from app.libs.ui_kit.components.primitives._base import ctk, use_ctk
+from libs.ui_kit.design_system import semantic_colors
+from libs.ui_kit.design_system import Typography
+from libs.ui_kit.design_system import normalize_option
+from libs.ui_kit import ctk, use_ctk
 
 
 LABEL_VARIANTS = ("default", "muted", "accent", "danger")

@@ -1,4 +1,4 @@
-from app.ui.student.forms.checkins import CheckinForm
-from app.ui.student.forms.tasks import TaskForm
+from .checkins import CheckinForm
+from .tasks import TaskForm
 
 __all__ = ["TaskForm", "CheckinForm"]

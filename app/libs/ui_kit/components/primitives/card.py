@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.component_tokens import card_size_tokens, card_tokens
-from app.libs.ui_kit.components.primitives._base import ctk, use_ctk
+from libs.ui_kit.design_system import card_size_tokens, card_tokens
+from libs.ui_kit import ctk, use_ctk
 
 CARD_SIZES = tuple(card_size_tokens().keys())
 

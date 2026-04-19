@@ -10,9 +10,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from app.libs.ui_kit import Button, Card, SectionHeader
-from app.libs.ui_kit.design_system.tokens import palette as design_palette
-from app.libs.ui_kit.design_system.typography import Typography
+from libs.ui_kit import Button, Card, SectionHeader
+from libs.ui_kit.design_system import palette as design_palette
+from libs.ui_kit.design_system import Typography
 
 try:  # Optional dependency; available when APP_UI=ctk and customtkinter is installed.
     import customtkinter as ctk

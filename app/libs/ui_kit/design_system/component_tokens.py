@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.libs.ui_kit.design_system.core_tokens import core_radius, core_spacing
-from app.libs.ui_kit.design_system.semantic_tokens import semantic_colors
+from libs.ui_kit.design_system import core_radius, core_spacing
+from libs.ui_kit.design_system import semantic_colors
 
 
 @dataclass(frozen=True)

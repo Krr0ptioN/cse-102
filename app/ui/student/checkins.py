@@ -3,8 +3,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.libs.ui_kit import ButtonBar, DataTable, Section
-from app.ui.student.forms import CheckinForm
+from libs.ui_kit import ButtonBar, DataTable, Section
+from ui.student.forms import CheckinForm
 
 
 class StudentCheckinsSection(Section):

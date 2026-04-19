@@ -1,7 +1,7 @@
-from app.core.db.connector import DBConnector
-from app.core.db.schema import init_db
-from app.core.repositories.app_state_repository import AppStateRepository
-from app.core.services.app_state import AppStateService
+from core.db.connector import DBConnector
+from core.db.schema import init_db
+from core.repositories import AppStateRepository
+from core.services import AppStateService
 
 
 def test_dataset_mode_defaults_to_real(tmp_path):

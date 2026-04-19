@@ -1,6 +1,6 @@
-from app.libs.ui_kit.components.actions import ButtonBar, add_modal_actions, bind_modal_keys
-from app.libs.ui_kit.components.cards import DetailsDrawer, StatCard
-from app.libs.ui_kit.components.composed import (
+from .actions import ButtonBar, add_modal_actions, bind_modal_keys
+from .cards import DetailsDrawer, StatCard
+from .composed import (
     AuthCard,
     EmptyState,
     FormDialog,
@@ -11,11 +11,11 @@ from app.libs.ui_kit.components.composed import (
     ToggleSelectionList,
     topbar_action,
 )
-from app.libs.ui_kit.components.drawers import TeamDrawer
-from app.libs.ui_kit.components.inputs import LabeledCombobox, LabeledEntry
-from app.libs.ui_kit.components.layout import AppShell, Section, Sidebar, Topbar
-from app.libs.ui_kit.components.positioning import Flex, Grid
-from app.libs.ui_kit.components.primitives import (
+from .drawers import TeamDrawer
+from .inputs import LabeledCombobox, LabeledEntry
+from .layout import AppShell, Section, Sidebar, Topbar
+from .positioning import Flex, Grid
+from .primitives import (
     Alert,
     Badge,
     Button,
@@ -32,15 +32,15 @@ from app.libs.ui_kit.components.primitives import (
 )
 
 # Optional CTk primitives (available when customtkinter is installed and APP_UI=ctk)
-from app.libs.ui_kit.components.ctk_primitives import (
+from .ctk_primitives import (
     CtkButton,
     CtkInput,
     CtkCard,
     CtkModal,
     CtkProgress,
 )
-from app.libs.ui_kit.components.modals import Modal
-from app.libs.ui_kit.components.tables import DataTable
+from .modals import Modal
+from .tables import DataTable
 
 __all__ = [
     "AppShell",
@@ -81,4 +81,9 @@ __all__ = [
     "SignInAuthCard",
     "SignUpAuthCard",
     "topbar_action",
+    "CtkButton",
+    "CtkInput",
+    "CtkCard",
+    "CtkModal",
+    "CtkProgress",
 ]

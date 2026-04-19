@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.core.repositories.schema_repository import SchemaRepository
-from app.core.services.base import Service
+from core.repositories import SchemaRepository
+from .base import Service
 
 
 class SchemaService(Service):

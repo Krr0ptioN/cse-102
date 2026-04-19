@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.core.db.connector import DBConnector
-from app.libs.logger import get_logger
+from core.db.connector import DBConnector
+from libs.logger import get_logger
 
 
 class Repository:

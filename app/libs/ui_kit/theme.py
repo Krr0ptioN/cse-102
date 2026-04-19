@@ -3,8 +3,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, font as tkfont
 
-from app.libs.ui_kit.design_system.tokens import palette as design_palette
-from app.libs.ui_kit.design_system.typography import Typography
+from libs.ui_kit.design_system import palette as design_palette
+from libs.ui_kit.design_system import Typography
 
 
 def palette() -> dict[str, str]:

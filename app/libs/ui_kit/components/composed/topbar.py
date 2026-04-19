@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.ui_kit.components.primitives import Button
+from libs.ui_kit import Button
 
 
 def topbar_action(master, *, text: str, command, side: str = "left"):

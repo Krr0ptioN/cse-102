@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.components.primitives import Button
-from app.libs.ui_kit.theme import palette
+from libs.ui_kit import Button
+from libs.ui_kit.theme import palette
 
 
 class ButtonBar(tk.Frame):

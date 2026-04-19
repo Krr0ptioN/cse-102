@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from tkinter import ttk
 
-from app.libs.ui_kit.components.primitives._base import ctk, use_ctk
+from libs.ui_kit import ctk, use_ctk
 
 
 def Tabs(master, **kwargs):  # noqa: N802

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.ui_kit.forms import Form, SelectField, TextAreaField, required
+from libs.ui_kit.forms import Form, SelectField, TextAreaField, required
 
 
 class CheckinForm(Form):

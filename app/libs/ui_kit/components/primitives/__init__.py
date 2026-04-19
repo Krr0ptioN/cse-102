@@ -1,15 +1,15 @@
-from app.libs.ui_kit.components.primitives.alert import Alert
-from app.libs.ui_kit.components.primitives.badge import Badge
-from app.libs.ui_kit.components.primitives.button import Button, BUTTON_SIZES, BUTTON_VARIANTS
-from app.libs.ui_kit.components.primitives.card import CARD_SIZES, Card
-from app.libs.ui_kit.components.primitives.dialog import Dialog
-from app.libs.ui_kit.components.primitives.input import Input, INPUT_SIZES
-from app.libs.ui_kit.components.primitives.label import Label, LABEL_VARIANTS
-from app.libs.ui_kit.components.primitives.select import Select
-from app.libs.ui_kit.components.primitives.table import Table
-from app.libs.ui_kit.components.primitives.tabs import Tabs, add_tab
-from app.libs.ui_kit.components.primitives.textarea import TextArea
-from app.libs.ui_kit.components.primitives._base import tk_style
+from libs.ui_kit import Alert
+from libs.ui_kit import Badge
+from libs.ui_kit import Button, BUTTON_SIZES, BUTTON_VARIANTS
+from libs.ui_kit import CARD_SIZES, Card
+from libs.ui_kit import Dialog
+from libs.ui_kit import Input, INPUT_SIZES
+from libs.ui_kit import Label, LABEL_VARIANTS
+from libs.ui_kit import Select
+from libs.ui_kit import Table
+from libs.ui_kit import Tabs, add_tab
+from libs.ui_kit import TextArea
+from libs.ui_kit import tk_style
 
 __all__ = [
     "Alert",

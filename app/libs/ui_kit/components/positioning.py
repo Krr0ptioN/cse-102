@@ -3,8 +3,8 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Literal
 
-from app.libs.ui_kit.components.primitives._base import frame_bg_kwargs
-from app.libs.ui_kit.design_system.core_tokens import core_spacing
+from libs.ui_kit import frame_bg_kwargs
+from libs.ui_kit.design_system import core_spacing
 
 SpacingToken = Literal["xxs", "xs", "sm", "md", "lg", "xl"]
 SpacingValue = int | SpacingToken

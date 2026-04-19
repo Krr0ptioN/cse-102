@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.libs.ui_kit.theme import palette
+from libs.ui_kit.theme import palette
 
 
 class LabeledEntry(tk.Frame):

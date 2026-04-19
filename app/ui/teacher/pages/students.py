@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.ui.teacher import StudentRosterSection
+from ui.teacher import StudentRosterSection
 
 
 class TeacherStudentsPage(tk.Frame):

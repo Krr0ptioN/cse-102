@@ -12,16 +12,16 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-# Ensure project root is on sys.path so `import app.*` works from any cwd.
+# Ensure project root is on sys.path so `import *` works from any cwd.
 APP_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = APP_ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.core.db.connector import DBConnector
-from app.core.db.schema import init_db
-from app.core.services.factory import ServiceFactory
-from app.libs.logger import get_logger
+from core.db.connector import DBConnector
+from core.db.schema import init_db
+from core.services import ServiceFactory
+from libs.logger import get_logger
 
 
 TEAM_MIN_SIZE = 4

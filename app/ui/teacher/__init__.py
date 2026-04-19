@@ -1,10 +1,10 @@
-from app.ui.teacher.checkins import CheckinsSection
-from app.ui.teacher.class_setup import ClassSetupSection
-from app.ui.teacher.roadmaps import RoadmapReviewSection
-from app.ui.teacher.stats import TeacherStatsRow
-from app.ui.teacher.students import StudentRosterSection
-from app.ui.teacher.teams import TeamSection
-from app.libs.ui_kit import TeamDrawer as TeacherDrawer
+from .checkins import CheckinsSection
+from .class_setup import ClassSetupSection
+from .roadmaps import RoadmapReviewSection
+from .stats import TeacherStatsRow
+from .students import StudentRosterSection
+from .teams import TeamSection
+from libs.ui_kit import TeamDrawer as TeacherDrawer
 
 __all__ = [
     "TeacherStatsRow",

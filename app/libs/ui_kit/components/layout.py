@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.component_tokens import button_variants
-from app.libs.ui_kit.design_system.typography import Typography
-from app.libs.ui_kit.components.composed import SectionHeader
-from app.libs.ui_kit.components.primitives import Button, Label
-from app.libs.ui_kit.theme import palette
+from libs.ui_kit.design_system import button_variants
+from libs.ui_kit.design_system import Typography
+from libs.ui_kit import SectionHeader
+from libs.ui_kit import Button, Label
+from libs.ui_kit.theme import palette
 
 
 class AppShell(tk.Frame):

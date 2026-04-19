@@ -1,6 +1,6 @@
-from app.ui.teacher.forms.checkins import ApprovalNoteForm
-from app.ui.teacher.forms.classes import ClassForm
-from app.ui.teacher.forms.students import StudentForm
-from app.ui.teacher.forms.teams import TeamForm
+from .checkins import ApprovalNoteForm
+from .classes import ClassForm
+from .students import StudentForm
+from .teams import TeamForm
 
 __all__ = ["ClassForm", "StudentForm", "TeamForm", "ApprovalNoteForm"]

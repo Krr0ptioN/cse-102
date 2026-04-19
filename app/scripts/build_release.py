@@ -11,7 +11,7 @@ PROJECT_ROOT = APP_ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.libs.logger import get_logger
+from libs.logger import get_logger
 
 
 logger = get_logger("app.scripts.build_release")

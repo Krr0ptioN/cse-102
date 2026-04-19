@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from app.libs.ui_kit import AppShell, CtkAppShell
+from libs.ui_kit import AppShell, CtkAppShell
 
 
 def resolve_shell():

@@ -2,21 +2,27 @@ from __future__ import annotations
 
 from tkinter import messagebox
 
-from app.core.services.auth import AuthenticatedUser
-from app.core.services.checkin import CheckinService
-from app.core.services.classes import ClassService
-from app.core.services.roadmap import RoadmapService
-from app.core.services.task import TaskService
-from app.core.services.team import TeamService
-from app.ui.shared.charts import show_reports_window
-from app.libs.ui_kit import FormDialog
-from app.ui.shared.dashboard_base import DashboardBase
-from app.ui.teacher.pages.checkins import TeacherCheckinsPage
-from app.ui.teacher.pages.classes import TeacherClassesPage
-from app.ui.teacher.pages.home import TeacherHomePage
-from app.ui.teacher.pages.roadmaps import TeacherRoadmapsPage
-from app.ui.teacher.pages.students import TeacherStudentsPage
-from app.ui.teacher.pages.teams import TeacherTeamsPage
+from core.services import (
+    AuthenticatedUser,
+    CheckinService,
+    ClassService,
+    RoadmapService,
+    TaskService,
+    TeamService,
+)
+from libs.ui_kit import FormDialog
+from ui.shared import (
+    show_reports_window,
+    DashboardBase
+)
+from .pages import (
+    TeacherCheckinsPage,
+    TeacherClassesPage,
+    TeacherHomePage,
+    TeacherRoadmapsPage,
+    TeacherStudentsPage,
+    TeacherTeamsPage,
+)
 
 
 class TeacherDashboard(DashboardBase):

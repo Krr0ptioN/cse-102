@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.core.repositories.app_state_repository import AppStateRepository
-from app.core.services.base import Service
+from core.repositories import AppStateRepository
+from .base import Service
 
 
 class AppStateService(Service):

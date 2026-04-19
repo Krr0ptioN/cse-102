@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.ui_kit.forms import Form, TextField, email, max_len, required
+from libs.ui_kit.forms import Form, TextField, email, max_len, required
 
 
 class StudentForm(Form):

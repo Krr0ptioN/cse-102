@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.design_system.component_tokens import input_size_tokens
-from app.libs.ui_kit.design_system.semantic_tokens import semantic_colors
-from app.libs.ui_kit.design_system.variants import resolve_variant
-from app.libs.ui_kit.components.primitives._base import ctk, use_ctk
+from libs.ui_kit.design_system import input_size_tokens
+from libs.ui_kit.design_system import semantic_colors
+from libs.ui_kit.design_system import resolve_variant
+from libs.ui_kit import ctk, use_ctk
 
 
 INPUT_SIZES = tuple(input_size_tokens().keys())

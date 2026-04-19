@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
-from app.libs.ui_kit.design.tokens import palette, spacing
+from libs.ui_kit.design.tokens import palette, spacing
 
 
 class CtkButton(ctk.CTkButton):

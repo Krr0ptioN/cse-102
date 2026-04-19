@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.ui_kit.forms import Form, TextAreaField, required
+from libs.ui_kit.forms import Form, TextAreaField, required
 
 
 class CommentForm(Form):

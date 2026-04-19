@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.logger import get_logger
+from libs.logger import get_logger
 
 
 class Service:

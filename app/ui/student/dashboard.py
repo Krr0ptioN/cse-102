@@ -3,26 +3,27 @@ from __future__ import annotations
 from datetime import date, timedelta
 from tkinter import messagebox
 
-from app.core.services.auth import AuthenticatedUser
-from app.core.services.checkin import CheckinService
-from app.core.services.roadmap import RoadmapService
-from app.core.services.task import TaskService
-from app.core.services.team import TeamService
-from app.core.services.classes import ClassService
-from app.core.services.validation import validate_roadmap
-from app.ui.shared.charts import show_reports_window
-from app.libs.ui_kit import Flex, FormDialog, Grid, Input, Label, Modal, add_modal_actions
-from app.ui.shared.dashboard_base import DashboardBase
-from app.ui.shared.forms import CommentForm
-from app.ui.student.forms import TaskForm
-from app.ui.student.pages import StudentOverviewPage, StudentSectionPage
-from app.ui.student import (
+from core.services import (
+    AuthenticatedUser,
+    CheckinService,
+    ClassService,
+    RoadmapService,
+    TaskService,
+    TeamService,
+    validate_roadmap,
+)
+from ui.shared import DashboardBase, show_reports_window
+from libs.ui_kit import Flex, FormDialog, Grid, Input, Label, Modal, add_modal_actions
+from ui.shared.forms import CommentForm
+from ui.student.forms import TaskForm
+from ui.student.pages import StudentOverviewPage, StudentSectionPage
+from ui.student import (
     RoadmapBuilderSection,
     StudentCheckinsSection,
     StudentCommentsSection,
     TaskSection,
 )
-from app.ui.shared.vm.helpers import (
+from ui.shared.vm.helpers import (
     Choice,
     Notifier,
     map_choices,

@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from app.core.services.base import Service
-from app.core.repositories.roadmap_repository import RoadmapRepository
+from .base import Service
+from core.repositories import RoadmapRepository
 
 
 STATUS_DRAFT = "Draft"

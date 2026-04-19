@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.libs.ui_kit.forms import Form, TextAreaField
+from libs.ui_kit.forms import Form, TextAreaField
 
 
 class ApprovalNoteForm(Form):

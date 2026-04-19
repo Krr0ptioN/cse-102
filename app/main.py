@@ -8,15 +8,14 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     ctk = None
 
-from app.libs.ui_kit.design_system.tokens import palette
-from app.ui.shared.paths import ensure_local_db_path
-from app.core.bootstrap import AppBootstrap
-from app.core.services.auth import AuthenticatedUser
-from app.libs.logger import get_logger
-from app.libs.ui_kit import SignInAuthCard, SignUpAuthCard
-from app.ui.shared.root_factory import resolve_root_class, apply_root_theme
-from app.ui.student.dashboard import StudentDashboard
-from app.ui.teacher.dashboard import TeacherDashboard
+from libs.ui_kit.design_system import palette
+from ui.shared import apply_root_theme, ensure_local_db_path, resolve_root_class
+from core.bootstrap import AppBootstrap
+from core.services import AuthenticatedUser
+from libs.logger import get_logger
+from libs.ui_kit import SignInAuthCard, SignUpAuthCard
+from ui.student.dashboard import StudentDashboard
+from ui.teacher.dashboard import TeacherDashboard
 
 
 BaseRoot = resolve_root_class()

@@ -3,9 +3,9 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from app.ui.teacher import RoadmapReviewSection
-from app.ui.shared.forms import CommentForm
-from app.libs.ui_kit import Modal, add_modal_actions
+from ui.teacher import RoadmapReviewSection
+from ui.shared.forms import CommentForm
+from libs.ui_kit import Modal, add_modal_actions
 
 
 class TeacherRoadmapsPage(tk.Frame):

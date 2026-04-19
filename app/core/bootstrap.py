@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from app.core.db.connector import DBConnector
-from app.core.db.schema import init_db
-from app.core.services.factory import ServiceFactory
-from app.libs.logger import get_logger
+from core.db.connector import DBConnector
+from core.db.schema import init_db
+from core.services import ServiceFactory
+from libs.logger import get_logger
 
 
 @dataclass(frozen=True)

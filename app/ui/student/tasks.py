@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from app.libs.ui_kit import Button, ButtonBar, DataTable, Section
+from libs.ui_kit import Button, ButtonBar, DataTable, Section
 
 
 class TaskSection(Section):

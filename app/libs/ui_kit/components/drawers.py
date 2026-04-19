@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from app.libs.ui_kit.components.cards import DetailsDrawer
+from libs.ui_kit import DetailsDrawer
 
 
 class TeamDrawer(DetailsDrawer):
