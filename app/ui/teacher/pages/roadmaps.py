@@ -6,21 +6,17 @@ from tkinter import messagebox
 from ui.teacher import RoadmapReviewSection
 from ui.shared.forms import CommentForm
 from libs.ui_kit import Modal, add_modal_actions
+from ui.shared.page import Page
 
 
-class TeacherRoadmapsPage(tk.Frame):
+class TeacherRoadmapsPage(Page):
     title = "Roadmaps"
+    route = "roadmaps"
 
-    def __init__(self, master, services: dict, class_id: int | None) -> None:
-        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
-        super().__init__(master, bg=colors_bg)
-        self.services = services
-        self.class_id = class_id
+    def __init__(self, dashboard) -> None:
+        super().__init__(dashboard)
 
-        self._build()
-        self._refresh_roadmaps()
-
-    def _build(self) -> None:
+    def on_mount(self) -> None:
         self.roadmap_section = RoadmapReviewSection(
             self,
             self._add_comment,
@@ -29,14 +25,18 @@ class TeacherRoadmapsPage(tk.Frame):
         )
         self.roadmap_section.pack(fill="both", expand=True)
 
+    def on_show(self) -> None:
+        self._refresh_roadmaps()
+
     def _selected_roadmap_id(self) -> int | None:
         return self.roadmap_section.selected_roadmap_id()
 
     def _refresh_roadmaps(self) -> None:
-        if not self.class_id:
+        class_id = self.dashboard.class_id
+        if not class_id:
             self.roadmap_section.set_roadmap_rows([])
             return
-        roadmaps = self.services["roadmap"].list_roadmaps_for_class(self.class_id)
+        roadmaps = self.dashboard.services["roadmap"].list_roadmaps_for_class(class_id)
         rows = [
             (r["id"], r["team"], r.get("principal") or "-", r["status"])
             for r in roadmaps
@@ -49,7 +49,7 @@ class TeacherRoadmapsPage(tk.Frame):
         if not roadmap_id:
             self.roadmap_section.set_comment_rows([])
             return
-        comments = self.services["roadmap"].list_roadmap_comments(roadmap_id)
+        comments = self.dashboard.services["roadmap"].list_roadmap_comments(roadmap_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
         self.roadmap_section.set_comment_rows(rows)
 
@@ -68,7 +68,7 @@ class TeacherRoadmapsPage(tk.Frame):
                 messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
             text = form.get_data()["text"]
-            self.services["roadmap"].add_roadmap_comment(
+            self.dashboard.services["roadmap"].add_roadmap_comment(
                 roadmap_id, "Teacher", text, "comment"
             )
             modal.destroy()
@@ -81,5 +81,5 @@ class TeacherRoadmapsPage(tk.Frame):
         if not roadmap_id:
             messagebox.showwarning("No roadmap", "Select a roadmap first.")
             return
-        self.services["roadmap"].approve_roadmap(roadmap_id)
+        self.dashboard.services["roadmap"].approve_roadmap(roadmap_id)
         self._refresh_roadmaps()

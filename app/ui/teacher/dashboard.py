@@ -42,13 +42,7 @@ class TeacherDashboard(DashboardBase):
         self.current_user = current_user
         self.demo_mode = demo_mode
 
-        self.class_service = class_service
-        self.checkin_service = checkin_service
-        self.team_service = team_service
-        self.roadmap_service = roadmap_service
-        self.task_service = task_service
-
-        self._services = {
+        self.services = {
             "class": class_service,
             "checkin": checkin_service,
             "team": team_service,
@@ -56,31 +50,18 @@ class TeacherDashboard(DashboardBase):
             "task": task_service,
         }
 
-        nav_items = [
-            ("Dashboard", "dashboard"),
-            ("Classes", "classes"),
-            ("Students", "students"),
-            ("Teams", "teams"),
-            ("Roadmaps", "roadmaps"),
-            ("Check-ins", "checkins"),
-            ("Reports", "reports"),
-        ]
-
         super().__init__(
             master,
             "Teacher Dashboard",
             on_back,
-            nav_items=nav_items,
-            on_nav=self._on_nav,
         )
 
         self._autoselect_class()
-        self._current_page: str | None = None
         self._navigate("dashboard")
         self.log.success("Teacher dashboard ready for %s", self.current_user.email)
 
     def _autoselect_class(self) -> None:
-        classes = self.class_service.list_classes(
+        classes = self.services["class"].list_classes(
             owner_user_id=self.current_user.id
         )
         if not classes:
@@ -91,6 +72,18 @@ class TeacherDashboard(DashboardBase):
 
     def build_layout(self) -> None:
         self.configure_content_grid((1, 1, 0))
+        
+        # Instantiate pages (they register themselves with 'self')
+        TeacherHomePage(self)
+        TeacherClassesPage(self)
+        TeacherStudentsPage(self)
+        TeacherTeamsPage(self)
+        TeacherRoadmapsPage(self)
+        TeacherCheckinsPage(self)
+        
+        # Add special reports navigation item
+        self.shell.add_nav_item("Reports", "reports")
+        
         if self.demo_mode:
             self.add_demo_button()
         self.add_topbar_button("View Charts", self._show_charts)
@@ -101,62 +94,7 @@ class TeacherDashboard(DashboardBase):
             return
         self._navigate(key)
 
-    def _navigate(self, route: str) -> None:
-        if route == self._current_page:
-            return
-        page = self._create_page(route)
-        if page is None:
-            return
-        self.swap_content(page)
-        self._current_page = route
-        self.set_active_nav(route)
-        self.log.info("Teacher view -> %s", route)
-
-    def _create_page(
-        self, route: str
-    ) -> (
-        TeacherHomePage
-        | TeacherClassesPage
-        | TeacherStudentsPage
-        | TeacherTeamsPage
-        | TeacherRoadmapsPage
-        | TeacherCheckinsPage
-        | None
-    ):
-        return {
-            "dashboard": TeacherHomePage(
-                self.shell.content,
-                self._services,
-                self.class_id),
-            "classes": TeacherClassesPage(
-                self.shell.content,
-                self._services,
-                owner_user_id=self.current_user.id,
-                current_class_id=self.class_id,
-                on_select_class=self._set_active_class,
-            ),
-            "students": TeacherStudentsPage(
-                self.shell.content,
-                self._services
-            ),
-            "teams": TeacherTeamsPage(
-                self.shell.content,
-                self._services,
-                self.class_id
-            ),
-            "roadmaps": TeacherRoadmapsPage(
-                self.shell.content,
-                self._services,
-                self.class_id
-            ),
-            "checkins": TeacherCheckinsPage(
-                self.shell.content,
-                self._services,
-                self.class_id
-            ),
-        }.get(route, None)
-
-    def _set_active_class(self, class_id: int) -> None:
+    def set_active_class(self, class_id: int) -> None:
         self.class_id = class_id
         self.log.info("Active class selected: %s", class_id)
 
@@ -165,7 +103,7 @@ class TeacherDashboard(DashboardBase):
             messagebox.showwarning("No class", "Create a class first.")
             return
 
-        teams = self.team_service.list_teams(self.class_id)
+        teams = self.services["team"].list_teams(self.class_id)
         if not teams:
             messagebox.showwarning("No team", "Create a team to view reports.")
             return
@@ -205,8 +143,8 @@ class TeacherDashboard(DashboardBase):
     def _open_team_reports(self, team: dict) -> None:
         team_id = team["id"]
         team_name = team.get("name", "Team")
-        tasks = self.task_service.list_tasks_for_team(team_id)
-        checkins = self.checkin_service.list_checkins_for_team(team_id)
+        tasks = self.services["task"].list_tasks_for_team(team_id)
+        checkins = self.services["checkin"].list_checkins_for_team(team_id)
 
         title = "Team Reports"
         principal = team.get("principal_name")

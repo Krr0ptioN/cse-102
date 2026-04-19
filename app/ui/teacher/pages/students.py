@@ -1,22 +1,19 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import messagebox
 
 from ui.teacher import StudentRosterSection
+from ui.shared.page import Page
 
 
-class TeacherStudentsPage(tk.Frame):
+class TeacherStudentsPage(Page):
     title = "Students"
+    route = "students"
 
-    def __init__(self, master, services: dict) -> None:
-        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
-        super().__init__(master, bg=colors_bg)
-        self.services = services
-        self._build()
-        self._refresh_students()
+    def __init__(self, dashboard) -> None:
+        super().__init__(dashboard)
 
-    def _build(self) -> None:
+    def on_mount(self) -> None:
         self.student_section = StudentRosterSection(
             self,
             self._add_student,
@@ -26,21 +23,24 @@ class TeacherStudentsPage(tk.Frame):
         )
         self.student_section.pack(fill="both", expand=True)
 
+    def on_show(self) -> None:
+        self._refresh_students()
+
     def _refresh_students(self) -> None:
-        students = self.services["class"].list_users(role="student")
+        students = self.dashboard.services["class"].list_users(role="student")
         rows = [(s["id"], s["name"], s["email"]) for s in students]
         self.student_section.set_rows(rows)
 
     def _add_student(self, data: dict) -> None:
-        self.services["class"].create_user(data["name"], data["email"], "student")
+        self.dashboard.services["class"].create_user(data["name"], data["email"], "student")
         self._refresh_students()
 
     def _edit_student(self, student_id: int, data: dict) -> None:
-        self.services["class"].update_user(student_id, data["name"], data["email"])
+        self.dashboard.services["class"].update_user(student_id, data["name"], data["email"])
         self._refresh_students()
 
     def _delete_student(self, student_id: int) -> None:
-        self.services["class"].delete_user(student_id)
+        self.dashboard.services["class"].delete_user(student_id)
         self._refresh_students()
 
     def _show_student_details(self) -> None:

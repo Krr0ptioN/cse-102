@@ -3,23 +3,19 @@ from __future__ import annotations
 import tkinter as tk
 
 from libs.ui_kit import Button, Card, DataTable, Input, SectionHeader, StatCard
+from ui.shared.page import Page
 
 
-class TeacherHomePage(tk.Frame):
+class TeacherHomePage(Page):
     """Dashboard analytics / snapshots for the teacher."""
 
     title = "Dashboard"
+    route = "dashboard"
 
-    def __init__(self, master, services: dict, class_id: int | None) -> None:
-        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
-        super().__init__(master, bg=colors_bg)
-        self.services = services
-        self.class_id = class_id
+    def __init__(self, dashboard) -> None:
+        super().__init__(dashboard)
 
-        self._build()
-        self._refresh()
-
-    def _build(self) -> None:
+    def on_mount(self) -> None:
         top = tk.Frame(self, bg=self["bg"])
         top.pack(fill="x", padx=10, pady=(10, 4))
 
@@ -118,8 +114,14 @@ class TeacherHomePage(tk.Frame):
         )
         self.roadmaps_table.pack(fill="both", expand=True, padx=10, pady=(2, 10))
 
+    def on_show(self) -> None:
+        self._refresh()
+
     def _refresh(self) -> None:
-        if not self.class_id:
+        class_id = self.dashboard.class_id
+        services = self.dashboard.services
+        
+        if not class_id:
             self._stats["Students"].set_value("0")
             self._stats["Teams"].set_value("0")
             self._stats["Roadmaps"].set_value("0")
@@ -128,20 +130,21 @@ class TeacherHomePage(tk.Frame):
             self._apply_checkins_filter()
             self._apply_roadmaps_filter()
             return
-        class_svc = self.services["class"]
-        team_svc = self.services["team"]
-        roadmap_svc = self.services["roadmap"]
-        checkin_svc = self.services["checkin"]
+            
+        class_svc = services["class"]
+        team_svc = services["team"]
+        roadmap_svc = services["roadmap"]
+        checkin_svc = services["checkin"]
 
         students = class_svc.list_users(role="student")
-        teams = team_svc.list_teams(self.class_id)
-        roadmaps = roadmap_svc.list_roadmaps_for_class(self.class_id)
+        teams = team_svc.list_teams(class_id)
+        roadmaps = roadmap_svc.list_roadmaps_for_class(class_id)
         self._stats["Students"].set_value(str(len(students)))
         self._stats["Teams"].set_value(str(len(teams)))
         self._stats["Roadmaps"].set_value(str(len(roadmaps)))
 
         # Recent check-ins
-        recent_checkins = checkin_svc.list_checkins_for_class(self.class_id)[:8]
+        recent_checkins = checkin_svc.list_checkins_for_class(class_id)[:8]
         checkin_rows = [
             (
                 c["id"],

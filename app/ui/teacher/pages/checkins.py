@@ -7,21 +7,17 @@ from libs.ui_kit import Modal, Section, add_modal_actions
 from ui.shared.forms import CommentForm
 from ui.teacher.forms import ApprovalNoteForm
 from ui.teacher import CheckinsSection
+from ui.shared.page import Page
 
 
-class TeacherCheckinsPage(tk.Frame):
+class TeacherCheckinsPage(Page):
     title = "Check-ins"
+    route = "checkins"
 
-    def __init__(self, master, services: dict, class_id: int | None) -> None:
-        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
-        super().__init__(master, bg=colors_bg)
-        self.services = services
-        self.class_id = class_id
+    def __init__(self, dashboard) -> None:
+        super().__init__(dashboard)
 
-        self._build()
-        self._refresh_checkins()
-
-    def _build(self) -> None:
+    def on_mount(self) -> None:
         self.section = CheckinsSection(
             self,
             self._refresh_checkin_comments,
@@ -33,14 +29,18 @@ class TeacherCheckinsPage(tk.Frame):
         # Drawer-like details for checkin summary
         self.details = Section(self, "Details")
         self.details.pack(fill="x", padx=12, pady=(0, 12))
-        self.details_body = tk.Label(self.details.body, text="Select a check-in")
+        self.details_body = tk.Label(self.details.body, text="Select a check-in", bg=self.details.body["bg"])
         self.details_body.pack(anchor="w", padx=4, pady=4)
 
+    def on_show(self) -> None:
+        self._refresh_checkins()
+
     def _refresh_checkins(self) -> None:
-        if not self.class_id:
+        class_id = self.dashboard.class_id
+        if not class_id:
             self.section.set_rows([])
             return
-        checkins = self.services["checkin"].list_checkins_for_class(self.class_id)
+        checkins = self.dashboard.services["checkin"].list_checkins_for_class(class_id)
         rows = [
             (
                 c["id"],
@@ -64,7 +64,7 @@ class TeacherCheckinsPage(tk.Frame):
         if not checkin_id:
             self.section.set_comment_rows([])
             return
-        comments = self.services["checkin"].list_checkin_comments(checkin_id)
+        comments = self.dashboard.services["checkin"].list_checkin_comments(checkin_id)
         rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
         self.section.set_comment_rows(rows)
         self._show_checkin_details()
@@ -84,7 +84,7 @@ class TeacherCheckinsPage(tk.Frame):
                 messagebox.showwarning("Invalid data", "\n".join(errors))
                 return
             text = form.get_data()["text"]
-            self.services["checkin"].add_checkin_comment(
+            self.dashboard.services["checkin"].add_checkin_comment(
                 checkin_id, "Teacher", text, "comment"
             )
             modal.destroy()
@@ -104,11 +104,11 @@ class TeacherCheckinsPage(tk.Frame):
         def save() -> None:
             note = form.get_data()["text"]
             if note:
-                self.services["checkin"].add_checkin_comment(
+                self.dashboard.services["checkin"].add_checkin_comment(
                     checkin_id, "Teacher", note, "approval"
                 )
-            if hasattr(self.services["checkin"], "approve_checkin"):
-                self.services["checkin"].approve_checkin(checkin_id)
+            if hasattr(self.dashboard.services["checkin"], "approve_checkin"):
+                self.dashboard.services["checkin"].approve_checkin(checkin_id)
             modal.destroy()
             self._refresh_checkins()
 
@@ -119,7 +119,7 @@ class TeacherCheckinsPage(tk.Frame):
         if not checkin_id:
             self.details_body.config(text="Select a check-in")
             return
-        chk = self.services["checkin"].get_checkin(checkin_id)
+        chk = self.dashboard.services["checkin"].get_checkin(checkin_id)
         if not chk:
             self.details_body.config(text="Select a check-in")
             return

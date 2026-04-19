@@ -5,31 +5,19 @@ from tkinter import messagebox
 
 from libs.ui_kit.design_system import palette
 from libs.ui_kit import Button, Card, EmptyState, Input, SectionHeader
+from ui.shared.page import Page
 
 
-class TeacherClassesPage(tk.Frame):
+class TeacherClassesPage(Page):
     title = "Classes"
+    route = "classes"
 
-    def __init__(
-        self,
-        master,
-        services: dict,
-        owner_user_id: int,
-        current_class_id: int | None,
-        on_select_class,
-    ) -> None:
-        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
-        super().__init__(master, bg=colors_bg)
-        self.services = services
-        self.owner_user_id = owner_user_id
-        self.current_class_id = current_class_id
-        self.on_select_class = on_select_class
+    def __init__(self, dashboard) -> None:
+        super().__init__(dashboard)
+
+    def on_mount(self) -> None:
         self.colors = palette()
 
-        self._build()
-        self._refresh()
-
-    def _build(self) -> None:
         header = SectionHeader(
             self,
             title="Class Management",
@@ -127,22 +115,26 @@ class TeacherClassesPage(tk.Frame):
             messagebox.showwarning("Missing data", "Enter class name and term.")
             return
 
-        class_id = self.services["class"].create_class(
+        class_id = self.dashboard.services["class"].create_class(
             name,
             term,
-            owner_user_id=self.owner_user_id,
+            owner_user_id=self.dashboard.current_user.id,
         )
-        self.current_class_id = class_id
-        self.on_select_class(class_id)
+        self.dashboard.set_active_class(class_id)
         self.name_entry.delete(0, tk.END)
         self.term_entry.delete(0, tk.END)
+        self._refresh()
+
+    def on_show(self) -> None:
         self._refresh()
 
     def _refresh(self) -> None:
         for child in list(self.cards_frame.winfo_children()):
             child.destroy()
 
-        classes = self.services["class"].list_classes(owner_user_id=self.owner_user_id)
+        classes = self.dashboard.services["class"].list_classes(
+            owner_user_id=self.dashboard.current_user.id
+        )
         if not classes:
             EmptyState(
                 self.cards_frame,
@@ -153,6 +145,7 @@ class TeacherClassesPage(tk.Frame):
             return
 
         active_text = "No active class"
+        current_class_id = self.dashboard.class_id
         for index, class_item in enumerate(classes):
             card = self._build_class_card(class_item)
             row = index // 2
@@ -160,7 +153,7 @@ class TeacherClassesPage(tk.Frame):
             card.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
             self.cards_frame.columnconfigure(col, weight=1)
 
-            if class_item["id"] == self.current_class_id:
+            if class_item["id"] == current_class_id:
                 active_text = (
                     f"Active class: {class_item['name']} ({class_item['term']})"
                 )
@@ -170,7 +163,7 @@ class TeacherClassesPage(tk.Frame):
     def _build_class_card(self, class_item: dict) -> tk.Frame:
         class_id = class_item["id"]
         stats = self._class_stats(class_id)
-        is_active = class_id == self.current_class_id
+        is_active = class_id == self.dashboard.class_id
 
         card = tk.Frame(
             self.cards_frame,
@@ -257,13 +250,14 @@ class TeacherClassesPage(tk.Frame):
         return card
 
     def _class_stats(self, class_id: int) -> dict[str, int]:
-        teams = self.services["team"].list_teams(class_id)
-        roadmaps = self.services["roadmap"].list_roadmaps_for_class(class_id)
-        checkins = self.services["checkin"].list_checkins_for_class(class_id)
+        services = self.dashboard.services
+        teams = services["team"].list_teams(class_id)
+        roadmaps = services["roadmap"].list_roadmaps_for_class(class_id)
+        checkins = services["checkin"].list_checkins_for_class(class_id)
 
         student_ids: set[int] = set()
         for team in teams:
-            members = self.services["team"].list_team_members(team["id"])
+            members = services["team"].list_team_members(team["id"])
             for member in members:
                 student_ids.add(int(member["id"]))
 
@@ -275,6 +269,5 @@ class TeacherClassesPage(tk.Frame):
         }
 
     def _select_class(self, class_id: int) -> None:
-        self.current_class_id = class_id
-        self.on_select_class(class_id)
+        self.dashboard.set_active_class(class_id)
         self._refresh()

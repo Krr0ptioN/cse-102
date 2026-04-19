@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import messagebox
+from typing import TYPE_CHECKING
 
 from libs.logger import get_logger
 from libs.ui_kit import topbar_action
 from libs.ui_kit import AppShell, TeamDrawer
 from ui.shared import resolve_shell
+
+if TYPE_CHECKING:
+    from ui.shared.page import Page
 
 
 class DashboardBase(tk.Frame):
@@ -22,17 +26,18 @@ class DashboardBase(tk.Frame):
         title: str,
         on_back,
         drawer_title: str = "Details",
-        nav_items: list[tuple[str, str]] | None = None,
-        on_nav=None,
         shell_cls=None,
     ) -> None:
         super().__init__(master)
         self.log = get_logger(f"app.ui.{self.__class__.__name__}")
         self.on_back = on_back
+        self._current_page_key: str | None = None
+        self.pages: dict[str, Page] = {}
 
         shell_class = shell_cls or resolve_shell()
+        # Initialize shell without nav_items; they will be added via register_page
         self.shell = shell_class(
-            self, title, on_back, nav_items=nav_items, on_nav=on_nav
+            self, title, on_back, nav_items=[], on_nav=self._on_nav
         )
         self.shell.pack(fill="both", expand=True)
         self.log.info("Dashboard initialized: %s", title)
@@ -40,8 +45,46 @@ class DashboardBase(tk.Frame):
         # Drawer is available for subclasses to populate.
         self.drawer = TeamDrawer(self.shell.content, drawer_title)
 
-        # Let subclasses build their specific UI.
+        # Let subclasses build their specific UI and register pages.
+        self.page_host = tk.Frame(self.shell.content, bg=self.shell.content["bg"])
+        self.page_host.grid(row=1, column=0, sticky="nsew")
+        self.shell.content.grid_rowconfigure(1, weight=1)
+        self.shell.content.grid_columnconfigure(0, weight=1)
+
         self.build_layout()
+
+    def register_page(self, page: Page) -> None:
+        """Register a page instance and add it to the navigation."""
+        if not page.route:
+            self.log.error("Page %s has no route defined", page.__class__.__name__)
+            return
+        
+        self.pages[page.route] = page
+        # Grid all pages to the same spot in page_host; we'll use lift/tkraise to switch
+        page.grid(in_=self.page_host, row=0, column=0, sticky="nsew")
+        self.page_host.grid_rowconfigure(0, weight=1)
+        self.page_host.grid_columnconfigure(0, weight=1)
+
+        self.shell.add_nav_item(page.title, page.route)
+        self.log.debug("Registered page: %s (%s)", page.title, page.route)
+
+    def _on_nav(self, key: str) -> None:
+        self._navigate(key)
+
+    def _navigate(self, route: str) -> None:
+        if route == self._current_page_key:
+            return
+        
+        page = self.pages.get(route)
+        if not page:
+            self.log.error("Navigation failed: Route '%s' not registered", route)
+            return
+
+        page.tkraise()
+        self._current_page_key = route
+        self.set_active_nav(route)
+        page.on_show()
+        self.log.info("View -> %s", route)
 
     # ----- Layout helpers -------------------------------------------------
     def configure_content_grid(
@@ -83,14 +126,6 @@ class DashboardBase(tk.Frame):
             "Demo Dataset",
             "You are currently viewing mock/demo data initialized at startup.",
         )
-
-    def swap_content(self, frame: tk.Frame) -> None:
-        """Replace current content with provided frame."""
-        for child in self.shell.content.winfo_children():
-            if child is frame:
-                continue
-            child.destroy()
-        frame.pack(fill="both", expand=True)
 
     # ----- Template methods -----------------------------------------------
     def build_layout(

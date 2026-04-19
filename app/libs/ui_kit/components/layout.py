@@ -52,6 +52,9 @@ class AppShell(tk.Frame):
     def set_active_nav(self, route: str | None) -> None:
         self.sidebar.set_active(route)
 
+    def add_nav_item(self, label: str, route: str) -> None:
+        self.sidebar.add_nav_item(label, route)
+
 
 class Sidebar(tk.Frame):
     def __init__(
@@ -131,6 +134,20 @@ class Sidebar(tk.Frame):
             variant="outline",
             size="sm",
         ).pack(fill="x")
+
+    def add_nav_item(self, label: str, key: str) -> None:
+        btn = Button(
+            self.nav,
+            text=label,
+            variant="secondary",
+            size="sm",
+            anchor="w",
+            command=(lambda k=key: self._handle_nav(k)),
+        )
+        btn.pack(fill="x", pady=4)
+        self._buttons[key] = btn
+        if not self._active_key:
+            self.set_active(key)
 
     def _handle_nav(self, key: str) -> None:
         if self.on_nav:

@@ -5,24 +5,19 @@ from tkinter import messagebox
 
 from libs.ui_kit import FormDialog, ToggleSelectionList
 from ui.teacher import TeamSection
+from ui.shared.page import Page
 
 
-class TeacherTeamsPage(tk.Frame):
+class TeacherTeamsPage(Page):
     title = "Teams"
+    route = "teams"
 
-    def __init__(self, master, services: dict, class_id: int | None) -> None:
-        colors_bg = master["bg"] if isinstance(master, tk.BaseWidget) else None
-        super().__init__(master, bg=colors_bg)
-        self.services = services
-        self.class_id = class_id
+    def __init__(self, dashboard) -> None:
         self._students: list[dict] = []
         self._member_rows: list[tuple] = []
+        super().__init__(dashboard)
 
-        self._build()
-        self._refresh_students()
-        self._refresh_teams()
-
-    def _build(self) -> None:
+    def on_mount(self) -> None:
         self.team_section = TeamSection(
             self,
             self._team_create_modal,
@@ -36,17 +31,22 @@ class TeacherTeamsPage(tk.Frame):
         )
         self.team_section.pack(fill="both", expand=True)
 
+    def on_show(self) -> None:
+        self._refresh_students()
+        self._refresh_teams()
+
     # --- data refresh
     def _refresh_students(self) -> None:
-        self._students = self.services["class"].list_users(role="student")
+        self._students = self.dashboard.services["class"].list_users(role="student")
         choices = [f"{s['id']} {s['name']}" for s in self._students]
         self.team_section.set_student_choices(choices)
 
     def _refresh_teams(self) -> None:
-        if not self.class_id:
+        class_id = self.dashboard.class_id
+        if not class_id:
             self.team_section.set_team_rows([])
             return
-        teams = self.services["team"].list_teams(self.class_id)
+        teams = self.dashboard.services["team"].list_teams(class_id)
         rows = []
         for team in teams:
             principal = team["principal_name"] or "-"
@@ -64,7 +64,7 @@ class TeacherTeamsPage(tk.Frame):
             self.team_section.set_member_rows([])
             self.team_section.set_invite_rows([])
             return
-        members = self.services["team"].list_team_members(team_id)
+        members = self.dashboard.services["team"].list_team_members(team_id)
         rows = [(m["id"], m["name"], m["email"], m["role"]) for m in members]
         self._member_rows = rows
         self.team_section.set_member_rows(rows)
@@ -75,7 +75,7 @@ class TeacherTeamsPage(tk.Frame):
         if not team_id:
             self.team_section.set_invite_rows([])
             return
-        invites = self.services["team"].list_invitations_for_team(team_id)
+        invites = self.dashboard.services["team"].list_invitations_for_team(team_id)
         rows = [(i["id"], i["user"], i["status"]) for i in invites]
         self.team_section.set_invite_rows(rows)
 
@@ -100,7 +100,8 @@ class TeacherTeamsPage(tk.Frame):
 
     # --- actions
     def _team_create_modal(self) -> None:
-        if not self.class_id:
+        class_id = self.dashboard.class_id
+        if not class_id:
             messagebox.showwarning("No class", "Create a class first.")
             return
 
@@ -124,9 +125,9 @@ class TeacherTeamsPage(tk.Frame):
                 messagebox.showwarning("Missing data", "Enter a team name.")
                 return
 
-            team_id = self.services["team"].create_team(self.class_id, team_name, None)
+            team_id = self.dashboard.services["team"].create_team(class_id, team_name, None)
             for user_id in picker.selected_ids():
-                self.services["team"].add_team_member(team_id, user_id)
+                self.dashboard.services["team"].add_team_member(team_id, user_id)
 
             dialog.destroy()
             self._refresh_teams()
@@ -151,7 +152,7 @@ class TeacherTeamsPage(tk.Frame):
             if not team_name:
                 messagebox.showwarning("Missing data", "Enter a team name.")
                 return
-            self.services["team"].update_team(team_id, team_name)
+            self.dashboard.services["team"].update_team(team_id, team_name)
             dialog.destroy()
             self._refresh_teams()
 
@@ -164,7 +165,7 @@ class TeacherTeamsPage(tk.Frame):
             return
         if not messagebox.askyesno("Confirm", "Delete this team and its data?"):
             return
-        self.services["team"].delete_team(team_id)
+        self.dashboard.services["team"].delete_team(team_id)
         self._refresh_teams()
 
     def _add_team_member(self) -> None:
@@ -187,7 +188,7 @@ class TeacherTeamsPage(tk.Frame):
             if not user_id:
                 messagebox.showwarning("No student", "Select a student to add.")
                 return
-            self.services["team"].add_team_member(team_id, user_id)
+            self.dashboard.services["team"].add_team_member(team_id, user_id)
             dialog.destroy()
             self._refresh_team_members()
 
@@ -213,7 +214,7 @@ class TeacherTeamsPage(tk.Frame):
             if not user_id:
                 messagebox.showwarning("No student", "Select a student to invite.")
                 return
-            self.services["team"].create_invitation(team_id, user_id)
+            self.dashboard.services["team"].create_invitation(team_id, user_id)
             dialog.destroy()
             self._refresh_team_invitations()
 
@@ -239,7 +240,7 @@ class TeacherTeamsPage(tk.Frame):
             if not user_id:
                 messagebox.showwarning("No student", "Select a principal student.")
                 return
-            self.services["team"].update_team_principal(team_id, user_id)
+            self.dashboard.services["team"].update_team_principal(team_id, user_id)
             dialog.destroy()
             self._refresh_teams()
 
@@ -275,7 +276,7 @@ class TeacherTeamsPage(tk.Frame):
                 messagebox.showwarning("No role", "Select a role.")
                 return
 
-            self.services["team"].set_member_role(team_id, user_id, selected_role)
+            self.dashboard.services["team"].set_member_role(team_id, user_id, selected_role)
             dialog.destroy()
             self._refresh_team_members()
 
