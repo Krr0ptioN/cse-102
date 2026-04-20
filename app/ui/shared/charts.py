@@ -217,7 +217,7 @@ def build_checkins_left_figure(checkins: list[dict]) -> Figure:
 def build_task_distribution_figure(tasks: list[dict]) -> Figure:
     colors = _ui_palette()
     fig = Figure(figsize=(4, 4), dpi=100)
-    fig.patch.set_facecolor(colors.bg)
+    fig.patch.set_facecolor(colors["bg"])
     ax = fig.add_subplot(111)
 
     if not tasks:
@@ -266,7 +266,7 @@ def build_task_distribution_figure(tasks: list[dict]) -> Figure:
         startangle=90,
         pctdistance=0.85,
         explode=[0.02] * len(sizes),
-        wedgeprops=dict(width=0.4, edgecolor=colors.border)
+        wedgeprops=dict(width=0.4, edgecolor=colors["border"])
     )
 
     # Add a center circle for a donut effect
@@ -277,9 +277,9 @@ def build_task_distribution_figure(tasks: list[dict]) -> Figure:
         title="Status",
         loc="center left",
         bbox_to_anchor=(1, 0, 0.5, 1),
-        facecolor=colors.surface,
-        edgecolor=colors.border,
-        labelcolor=colors.text,
+        facecolor=colors["surface"],
+        edgecolor=colors["border"],
+        labelcolor=colors["text"],
         fontsize=9
     )
 
