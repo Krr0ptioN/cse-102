@@ -3,6 +3,11 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, font as tkfont
 
+try:
+    import customtkinter as ctk
+except Exception:  # pragma: no cover - optional dependency
+    ctk = None
+
 from .design_system import palette as design_palette
 from .design_system import Typography
 
