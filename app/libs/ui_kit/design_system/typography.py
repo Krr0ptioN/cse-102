@@ -26,17 +26,13 @@ class Typography:
     def primary_font_family() -> str:
         """Return the primary family for toolkits that expect a single name."""
 
-        # Ensure bundled fonts are registered before any module-level FONT_FAMILY
-        # constants are evaluated.
+        # Ensure bundled fonts are registered.
         Typography.bootstrap_fonts()
         if Typography._resolved_family:
             return Typography._resolved_family
-        preferred = Typography().font_family.split(",")[0].strip()
-        resolved = Typography._resolve_family_from_fontconfig(preferred)
-        if resolved:
-            Typography._resolved_family = resolved
-            return resolved
-        return preferred
+        
+        # Default to Geist; it will be used as a key in Tk/CTk font managers.
+        return "Geist"
 
     @staticmethod
     def _resolve_family_from_fontconfig(preferred: str) -> Optional[str]:
@@ -174,9 +170,19 @@ class Typography:
                 return
         # Windows fallback only; Linux can discover user fonts after cache refresh.
         if sys.platform.startswith("win"):
+            # Python 3.14 + CustomTkinter can fail on multi-word family names.
+            for candidate in ("Arial", "Calibri", "Tahoma", "Verdana", "Consolas"):
+                if candidate in families:
+                    Typography._resolved_family = candidate
+                    return
             try:
                 fallback = tkfont.nametofont("TkDefaultFont").cget("family")
                 if fallback:
+                    if " " in fallback:
+                        for candidate in sorted(families):
+                            if candidate and " " not in candidate:
+                                Typography._resolved_family = candidate
+                                return
                     Typography._resolved_family = fallback
             except Exception:
                 pass

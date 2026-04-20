@@ -34,9 +34,11 @@ def apply_theme(root: tk.Tk) -> None:
 
     _apply_default_fonts(root)
 
-    root.configure(bg=colors["bg"])
+    if ctk is not None and isinstance(root, ctk.CTk):
+        root.configure(fg_color=colors["bg"])
+    else:
+        root.configure(bg=colors["bg"])
 
-    root.option_add("*Font", f"{Typography.primary_font_family()} 10")
     root.option_add("*Background", colors["bg"])
     root.option_add("*Foreground", colors["text"])
     root.option_add("*Frame.Background", colors["bg"])

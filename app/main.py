@@ -31,7 +31,10 @@ class AppShell(BaseRoot):
         self.title(runtime.config.title)
         self.geometry(runtime.config.geometry)
         colors = palette()
-        self.configure(bg=colors.bg)
+        if self._is_ctk() and ctk:
+            self.configure(fg_color=colors.bg)
+        else:
+            self.configure(bg=colors.bg)
         log.info("Using database at %s", runtime.config.db_path)
 
         self._services = runtime.services
