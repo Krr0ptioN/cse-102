@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import input_size_tokens
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit.design_system import resolve_variant
-from libs.ui_kit import ctk, use_ctk
+from ...design_system import input_size_tokens
+from ...design_system import semantic_colors
+from ...design_system import resolve_variant
+from ._base import ctk, use_ctk
 
 
 INPUT_SIZES = tuple(input_size_tokens().keys())
@@ -22,25 +22,26 @@ def Input(  # noqa: N802
     _, size_tokens = resolve_variant(size, input_size_tokens(), default="md")
 
     if use_ctk(master) and ctk is not None:
-        widget = ctk.CTkEntry(
-            master,
-            corner_radius=0,
-            fg_color=colors.surface,
-            border_color=colors.border,
-            text_color=colors.text,
-            placeholder_text=placeholder or "",
-            **kwargs,
-        )
-        return widget
+        kwargs.setdefault("corner_radius", 0)
+        kwargs.setdefault("fg_color", colors.surface)
+        kwargs.setdefault("border_color", colors.border)
+        kwargs.setdefault("text_color", colors.text)
+        kwargs.setdefault("placeholder_text", placeholder or "")
+        
+        # Filter standard tk keys
+        if "bg" in kwargs:
+            kwargs.setdefault("fg_color", kwargs.pop("bg"))
+        if "fg" in kwargs:
+            kwargs.setdefault("text_color", kwargs.pop("fg"))
+            
+        return ctk.CTkEntry(master, **kwargs)
 
-    widget = tk.Entry(
-        master,
-        bg=colors.surface,
-        fg=colors.text,
-        highlightbackground=colors.border,
-        highlightthickness=1,
-        bd=0,
-        **kwargs,
-    )
+    kwargs.setdefault("bg", colors.surface)
+    kwargs.setdefault("fg", colors.text)
+    kwargs.setdefault("highlightbackground", colors.border)
+    kwargs.setdefault("highlightthickness", 1)
+    kwargs.setdefault("bd", 0)
+
+    widget = tk.Entry(master, **kwargs)
     widget.configure(**size_tokens)
     return widget

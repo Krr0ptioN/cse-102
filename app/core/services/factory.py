@@ -1,21 +1,23 @@
 from __future__ import annotations
 
 from core.db.connector import DBConnector
-from core.repositories import AppStateRepository
-from core.repositories import AuthRepository
-from core.repositories import ClassRepository
-from core.repositories import CheckinRepository
-from core.repositories import RoadmapRepository
-from core.repositories import TaskRepository
-from core.repositories import TeamRepository
-from core.services import AppStateService
-from core.services import AuthService
-from core.services import ClassService
-from core.services import CheckinService
-from core.services import RoadmapService
-from core.services import SessionService
-from core.services import TaskService
-from core.services import TeamService
+from core.repositories import (
+    AppStateRepository,
+    AuthRepository,
+    ClassRepository,
+    CheckinRepository,
+    RoadmapRepository,
+    TaskRepository,
+    TeamRepository,
+)
+from .app_state import AppStateService
+from .auth import AuthService
+from .classes import ClassService
+from .checkin import CheckinService
+from .roadmap import RoadmapService
+from .session import SessionService
+from .task import TaskService
+from .team import TeamService
 from libs.logger import get_logger
 
 
@@ -39,4 +41,3 @@ class ServiceFactory:
         self.roadmap_service = RoadmapService(roadmap_repo)
         self.task_service = TaskService(task_repo)
         self.session_service = SessionService()
-        self.log.success("Service factory initialized")

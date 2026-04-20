@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import button_variants
-from libs.ui_kit.design_system import Typography
-from libs.ui_kit import SectionHeader
-from libs.ui_kit import Button, Label
-from libs.ui_kit.theme import palette
+from ..design_system import button_variants
+from ..design_system import Typography
+from .composed import SectionHeader
+from .primitives import Button, Label, set_button_variant
+from ..theme import palette
 
 
 class AppShell(tk.Frame):
@@ -161,16 +161,7 @@ class Sidebar(tk.Frame):
     @staticmethod
     def _apply_button_style(button, *, active: bool) -> None:
         variant_key = "default" if active else "secondary"
-        tokens = button_variants()[variant_key]
-        button.configure(
-            bg=tokens.bg,
-            fg=tokens.fg,
-            activebackground=tokens.hover,
-            activeforeground=tokens.fg,
-            highlightbackground=tokens.border,
-            highlightcolor=tokens.border,
-            highlightthickness=1,
-        )
+        set_button_variant(button, variant_key, size="sm")
 
 
 class Topbar(tk.Frame):

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from libs.ui_kit.design_system import button_variants
-from libs.ui_kit.design_system import semantic_colors
+from . import button_variants
+from .semantic_tokens import semantic_colors
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,9 @@ class Palette:
     text: str
     muted: str
     primary: str
+    success: str
+    warning: str
+    danger: str
 
 
 def palette() -> Palette:
@@ -27,6 +30,9 @@ def palette() -> Palette:
         text=colors.text,
         muted=colors.muted,
         primary=colors.primary,
+        success=colors.success,
+        warning=colors.warning,
+        danger=colors.danger,
     )
 
 
@@ -42,6 +48,9 @@ def legacy_palette_dict() -> dict[str, str]:
         "text": p.text,
         "muted": p.muted,
         "primary": p.primary,
+        "success": p.success,
+        "warning": p.warning,
+        "danger": p.danger,
         "accent": p.primary,
         "accent_light": semantic_colors().primary_soft,
     }

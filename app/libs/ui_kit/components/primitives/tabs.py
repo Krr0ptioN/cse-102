@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from tkinter import ttk
 
-from libs.ui_kit import ctk, use_ctk
+from ._base import ctk, use_ctk
 
 
 def Tabs(master, **kwargs):  # noqa: N802
     if use_ctk(master) and ctk is not None:
-        return ctk.CTkTabview(master, corner_radius=0, **kwargs)
+        kwargs.setdefault("corner_radius", 0)
+        return ctk.CTkTabview(master, **kwargs)
     return ttk.Notebook(master, **kwargs)
 
 

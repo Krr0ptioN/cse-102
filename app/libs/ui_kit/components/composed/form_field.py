@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit import ctk, use_ctk
-from libs.ui_kit import Label
+from ...design_system import semantic_colors
+from ..primitives._base import ctk, use_ctk
+from ..primitives import Label
 
 
 class FormField:

@@ -16,6 +16,9 @@ class TaskService(Service):
     def list_tasks_for_roadmap(self, roadmap_id: int) -> list[dict]:
         return self.repo.list_tasks_for_roadmap(roadmap_id)
 
+    def get_task(self, task_id: int) -> dict | None:
+        return self.repo.get_task(task_id)
+
     def add_update(self, task_id: int, user_id: int, text: str) -> None:
         self.repo.add_update(task_id, user_id, text, datetime.now(UTC).isoformat())
 

@@ -25,6 +25,17 @@ class TaskRepository(Repository):
                 for row in cur.fetchall()
             ]
 
+    def get_task(self, task_id: int) -> dict | None:
+        with self.db.connect() as conn:
+            cur = conn.execute(
+                "SELECT id, title, weight, status FROM tasks WHERE id = ?",
+                (task_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {"id": row[0], "title": row[1], "weight": row[2], "status": row[3]}
+
     def add_update(self, task_id: int, user_id: int, text: str, created_at: str) -> None:
         with self.db.transaction() as conn:
             conn.execute(

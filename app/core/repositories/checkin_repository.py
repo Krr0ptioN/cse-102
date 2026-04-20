@@ -127,11 +127,13 @@ class CheckinRepository(Repository):
         with self.db.connect() as conn:
             cur = conn.execute(
                 """
-                SELECT id, team_id, week_start, week_end, status, wins, risks,
-                       next_goal, help_needed, metrics_total, metrics_done,
-                       metrics_percent, submitted_at
+                SELECT checkins.id, checkins.team_id, teams.name, checkins.week_start, 
+                       checkins.week_end, checkins.status, checkins.wins, checkins.risks,
+                       checkins.next_goal, checkins.help_needed, checkins.metrics_total, 
+                       checkins.metrics_done, checkins.metrics_percent, checkins.submitted_at
                 FROM checkins
-                WHERE id = ?
+                JOIN teams ON teams.id = checkins.team_id
+                WHERE checkins.id = ?
                 """,
                 (checkin_id,),
             )
@@ -141,17 +143,18 @@ class CheckinRepository(Repository):
             return {
                 "id": row[0],
                 "team_id": row[1],
-                "week_start": row[2],
-                "week_end": row[3],
-                "status": row[4],
-                "wins": row[5],
-                "risks": row[6],
-                "next_goal": row[7],
-                "help_needed": row[8],
-                "metrics_total": row[9],
-                "metrics_done": row[10],
-                "metrics_percent": row[11],
-                "submitted_at": row[12],
+                "team_name": row[2],
+                "week_start": row[3],
+                "week_end": row[4],
+                "status": row[5],
+                "wins": row[6],
+                "risks": row[7],
+                "next_goal": row[8],
+                "help_needed": row[9],
+                "metrics_total": row[10],
+                "metrics_done": row[11],
+                "metrics_percent": row[12],
+                "submitted_at": row[13],
             }
 
     def add_checkin_comment(
@@ -171,6 +174,13 @@ class CheckinRepository(Repository):
             conn.execute(
                 "UPDATE checkins SET status = ? WHERE id = ?",
                 ("Approved", checkin_id),
+            )
+
+    def update_checkin_status(self, checkin_id: int, status: str) -> None:
+        with self.db.transaction() as conn:
+            conn.execute(
+                "UPDATE checkins SET status = ? WHERE id = ?",
+                (status, checkin_id),
             )
 
     def list_checkin_comments(self, checkin_id: int) -> list[dict]:

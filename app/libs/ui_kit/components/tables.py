@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from libs.ui_kit import Table
+from .primitives import Table
 
 
 class DataTable(Table):

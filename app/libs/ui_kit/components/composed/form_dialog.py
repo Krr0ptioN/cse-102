@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import button_variants
-from libs.ui_kit import add_modal_actions
-from libs.ui_kit import Modal
-from libs.ui_kit import Button
-from libs.ui_kit import Input
-from libs.ui_kit import Label
-from libs.ui_kit import Select
-from libs.ui_kit.theme import palette
+from ...design_system import button_variants
+from ..actions import add_modal_actions
+from ..modals import Modal
+from ..primitives import Button
+from ..primitives import Input
+from ..primitives import Label
+from ..primitives import Select
+from ...theme import palette
 
 
 class FormDialog:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit import Button, Card, Input, Label, Select
+from ..primitives import Button, Card, Input, Label, Select
 
 
 class AuthCard:

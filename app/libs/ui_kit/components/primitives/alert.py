@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit.design_system import Typography
-from libs.ui_kit.design_system import normalize_option
-from libs.ui_kit import ctk, use_ctk
+from ...design_system import semantic_colors
+from ...design_system import Typography
+from ...design_system import normalize_option
+from ._base import ctk, use_ctk
 
 
 ALERT_VARIANTS = ("info", "success", "warning", "danger")
@@ -17,6 +17,7 @@ def Alert(  # noqa: N802
     title: str,
     description: str = "",
     variant: str = "info",
+    **kwargs,
 ):
     colors = semantic_colors()
     selected = normalize_option(variant, ALERT_VARIANTS, "info")
@@ -31,13 +32,12 @@ def Alert(  # noqa: N802
     title_font_tk = (Typography.primary_font_family(), 11, "bold")
 
     if use_ctk(master) and ctk is not None:
-        container = ctk.CTkFrame(
-            master,
-            fg_color=bg,
-            border_color=colors.border,
-            border_width=1,
-            corner_radius=0,
-        )
+        kwargs.setdefault("fg_color", bg)
+        kwargs.setdefault("border_color", colors.border)
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("corner_radius", 0)
+        
+        container = ctk.CTkFrame(master, **kwargs)
         container.columnconfigure(0, weight=1)
         ctk.CTkLabel(
             container,
@@ -54,13 +54,12 @@ def Alert(  # noqa: N802
             ).grid(row=1, column=0, sticky="w", padx=12, pady=(0, 10))
         return container
 
-    container = tk.Frame(
-        master,
-        bg=bg,
-        highlightbackground=colors.border,
-        highlightthickness=1,
-        bd=0,
-    )
+    kwargs.setdefault("bg", bg)
+    kwargs.setdefault("highlightbackground", colors.border)
+    kwargs.setdefault("highlightthickness", 1)
+    kwargs.setdefault("bd", 0)
+    
+    container = tk.Frame(master, **kwargs)
     tk.Label(container, text=title, bg=bg, fg=fg, font=title_font_tk).pack(
         anchor="w", padx=12, pady=(10, 4)
     )

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Ensure project root is on sys.path so `import *` works from any cwd.
@@ -18,7 +19,7 @@ from libs.logger import get_logger
 
 
 DEMO_PASSWORD = "demo1234"
-DEMO_TEACHER_NAME = "Demo Teacher"
+DEMO_TEACHER_NAME = "Prof. Mardin"
 DEMO_TEACHER_EMAIL = "teacher.demo@example.edu"
 DEFAULT_REPORT_PATH = APP_ROOT / "assets" / "mock_data" / "seed_mock_data_report.md"
 
@@ -51,7 +52,7 @@ def _write_report(db_path: Path, student_logins: list[tuple[str, str]], report_p
 
 
 def seed(db_path: Path, report_path: Path) -> None:
-    logger.banner("Seed Mock Data")
+    logger.banner("Seed Mock Data (Modernized)")
     logger.info("Target database: %s", db_path)
     init_db(str(db_path))
     services = ServiceFactory(DBConnector(str(db_path)))
@@ -67,7 +68,7 @@ def seed(db_path: Path, report_path: Path) -> None:
 
     # Create class
     class_id = services.class_service.create_class(
-        "Project Lifecycle Engineering", "Spring 2026", owner_user_id=teacher.id
+        "Software Engineering (CSE-102)", "Spring 2026", owner_user_id=teacher.id
     )
 
     # Students
@@ -92,27 +93,26 @@ def seed(db_path: Path, report_path: Path) -> None:
         student_logins.append((name, email))
     logger.success("Student accounts ready: %d", len(student_logins))
 
-    # Teams (English names) with principals
+    # Teams with principals
     team_defs = [
         {
-            "name": "Atlas Innovators",
+            "name": "Linear Explorers",
             "members": ["Ava Thompson", "Noah Williams", "Liam Patel"],
             "principal": "Ava Thompson",
         },
         {
-            "name": "Northstar Builders",
+            "name": "Modern Stack",
             "members": ["Emma Chen", "Mia Robinson"],
             "principal": "Emma Chen",
         },
         {
-            "name": "Brightpath Crew",
+            "name": "Design Systems",
             "members": ["Ethan Brooks", "Sophia Garcia", "Oliver Davis"],
             "principal": "Sophia Garcia",
         },
     ]
 
     team_ids: dict[str, int] = {}
-    team_tasks: dict[str, list[int]] = {}
 
     for team_def in team_defs:
         principal_id = student_ids[team_def["principal"]]
@@ -124,36 +124,39 @@ def seed(db_path: Path, report_path: Path) -> None:
         for member_name in team_def["members"]:
             services.team_service.add_team_member(team_id, student_ids[member_name])
 
-        team_tasks[team_def["name"]] = []
-
     # Roadmaps, phases, tasks
     phase_names = ["Discovery", "Design", "Implementation", "Validation"]
 
     roadmap_text = {
         "Discovery": [
-            ("Clarify problem statement", 10),
-            ("Interview stakeholders", 15),
+            ("User research and interviews", 10),
+            ("Competitive analysis", 5),
+            ("Initial project requirements doc", 10),
         ],
         "Design": [
-            ("Draft system architecture", 15),
-            ("Review architecture with mentor", 10),
+            ("High-fidelity UI mockups (Figma)", 15),
+            ("Entity-Relationship (ER) diagram", 5),
+            ("Technical architecture specification", 10),
         ],
         "Implementation": [
-            ("Build core features", 15),
-            ("Integrate data flows", 10),
-            ("Add UX polish", 10),
+            ("Core backend service layer", 15),
+            ("Database schema migrations", 5),
+            ("Frontend UI components", 10),
+            ("Integration of real-time updates", 10),
         ],
         "Validation": [
-            ("Write test plan", 5),
-            ("Run functional tests", 5),
-            ("Prepare demo", 5),
+            ("Unit and E2E test suite", 5),
+            ("Beta testing feedback loop", 5),
+            ("Production deployment and handoff", 5),
         ],
     }
 
     for team_name, team_id in team_ids.items():
         team_def = next(td for td in team_defs if td["name"] == team_name)
         roadmap_id = services.roadmap_service.create_roadmap(team_id)
+        
         sort_order = 1
+        team_tasks = []
         for phase_name in phase_names:
             phase_id = services.roadmap_service.create_phase(
                 roadmap_id, phase_name, sort_order
@@ -161,66 +164,78 @@ def seed(db_path: Path, report_path: Path) -> None:
             sort_order += 1
             for title, weight in roadmap_text[phase_name]:
                 task_id = services.roadmap_service.create_task(phase_id, title, weight)
-                team_tasks[team_name].append(task_id)
+                team_tasks.append((task_id, phase_name))
+
+        # Randomize task statuses
+        for task_id, phase in team_tasks:
+            if phase == "Discovery":
+                status = "Done"
+            elif phase == "Design":
+                status = random.choice(["Done", "In Progress"])
+            elif phase == "Implementation":
+                status = random.choice(["Todo", "In Progress", "Blocked"])
+            else:
+                status = "Todo"
+            services.task_service.update_task_status(task_id, status)
+            
+            # Add some updates to "In Progress" or "Done" tasks
+            if status in ["Done", "In Progress", "Blocked"]:
+                member_name = random.choice(team_def["members"])
+                member_id = student_ids[member_name]
+                update_texts = {
+                    "Done": "Finalized the document and shared with the team.",
+                    "In Progress": "Making steady progress. Current focus is on the core logic.",
+                    "Blocked": "Encountered an issue with the third-party API. Investigating alternatives.",
+                }
+                services.task_service.add_update(task_id, member_id, update_texts[status])
+
+        # Roadmap comments (Discussion)
         services.roadmap_service.add_roadmap_comment(
-            roadmap_id,
-            author=DEMO_TEACHER_NAME,
-            text=f"Roadmap for {team_name} initialized with four phases.",
-            kind="comment",
+            roadmap_id, DEMO_TEACHER_NAME, 
+            "The initial roadmap looks comprehensive. Good luck with the Discovery phase!", 
+            "comment"
+        )
+        services.roadmap_service.add_roadmap_comment(
+            roadmap_id, team_def["principal"], 
+            "Thanks Mardin! We've just started interviewing users today.", 
+            "comment"
         )
 
-        # Mark some tasks progressed and add updates
-        tasks_for_team = team_tasks[team_name]
-        if tasks_for_team:
-            services.task_service.update_task_status(tasks_for_team[0], "Done")
-        if len(tasks_for_team) > 1:
-            services.task_service.update_task_status(tasks_for_team[1], "In Progress")
+        # Mark roadmap as approved to allow check-ins
+        services.roadmap_service.submit_roadmap(roadmap_id)
+        services.roadmap_service.approve_roadmap(roadmap_id)
 
-        member_id = student_ids[team_def["members"][0]]
-        if tasks_for_team:
-            services.task_service.add_update(
-                tasks_for_team[0], member_id, "Completed initial planning outline."
+        # Multiple Check-ins for history
+        checkin_weeks = [
+            ("2026-03-09", "2026-03-15", "Approved", "Great progress on Discovery."),
+            ("2026-03-16", "2026-03-22", "Approved", "Design looks solid. Implementation starting."),
+            ("2026-03-23", "2026-03-29", "Submitted", None)
+        ]
+
+        for week_start, week_end, status, feedback in checkin_weeks:
+            metrics = services.checkin_service.compute_metrics(team_id)
+            checkin_id = services.checkin_service.create_checkin(
+                team_id, week_start, week_end,
+                status="On Track" if status == "Approved" else "At Risk",
+                wins="Completed all planned milestones for this period.",
+                risks="None identified." if status == "Approved" else "Scaling issues encountered.",
+                next_goal="Proceed to the next phase as planned.",
+                help_needed=None,
+                metrics=metrics,
             )
-        if len(tasks_for_team) > 1:
-            services.task_service.add_update(
-                tasks_for_team[1],
-                member_id,
-                "Drafted architecture diagram and shared with team.",
-            )
-
-        # Create check-in with comments
-        metrics = services.checkin_service.compute_metrics(team_id)
-        week_start = "2026-03-09"
-        week_end = "2026-03-15"
-        checkin_id = services.checkin_service.create_checkin(
-            team_id,
-            week_start,
-            week_end,
-            status="On Track",
-            wins="Team aligned on scope; completed discovery tasks.",
-            risks="Need clarification on API limits.",
-            next_goal="Finalize design and begin implementation.",
-            help_needed=None,
-            metrics=metrics,
-        )
-        services.checkin_service.add_checkin_comment(
-            checkin_id,
-            DEMO_TEACHER_NAME,
-            "Good momentum. Please clarify risks with mentor.",
-            "comment",
-        )
-
-        # Invitations (pending/declined)
-        pending_invitee = student_ids.get("Lucas Reed")
-        declined_invitee = student_ids.get("Grace Nguyen")
-        if pending_invitee:
-            services.team_service.create_invitation(team_id, pending_invitee)
-        if declined_invitee:
-            inv_id = services.team_service.create_invitation(team_id, declined_invitee)
-            services.team_service.decline_invitation(inv_id)
+            # Apply formal status
+            services.checkin_service.update_checkin_status(checkin_id, status)
+            
+            if feedback:
+                services.checkin_service.add_checkin_comment(checkin_id, DEMO_TEACHER_NAME, feedback, "comment")
+            
+            # Add a back-and-forth discussion on the latest check-in
+            if status == "Submitted":
+                services.checkin_service.add_checkin_comment(checkin_id, team_def["principal"], "We are slightly behind on the backend integration due to environmental issues.", "comment")
+                services.checkin_service.add_checkin_comment(checkin_id, DEMO_TEACHER_NAME, "Understood. Let me know if you need any resources to unblock the team.", "comment")
 
     _write_report(db_path, student_logins, report_path)
-    logger.success("Final report written: %s", report_path)
+    logger.success("Modernized mock data seed complete.")
 
 
 def main() -> None:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import card_size_tokens, card_tokens
-from libs.ui_kit import ctk, use_ctk
+from ...design_system import card_size_tokens, card_tokens
+from ._base import ctk, use_ctk
 
 CARD_SIZES = tuple(card_size_tokens().keys())
 
@@ -115,23 +115,22 @@ def Card(  # noqa: N802
         kwargs["height"] = resolved_height
 
     if use_ctk(master) and ctk is not None:
-        frame = ctk.CTkFrame(
-            master,
-            fg_color=tokens["bg"],
-            border_color=tokens["border"],
-            border_width=1,
-            corner_radius=tokens["radius"],
-            **kwargs,
-        )
+        kwargs.setdefault("fg_color", tokens["bg"])
+        kwargs.setdefault("border_color", tokens["border"])
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("corner_radius", tokens["radius"])
+        
+        # Filter standard tk keys
+        if "bg" in kwargs:
+            kwargs.setdefault("fg_color", kwargs.pop("bg"))
+            
+        frame = ctk.CTkFrame(master, **kwargs)
     else:
-        frame = tk.Frame(
-            master,
-            bg=tokens["bg"],
-            highlightbackground=tokens["border"],
-            highlightthickness=1,
-            bd=0,
-            **kwargs,
-        )
+        kwargs.setdefault("bg", tokens["bg"])
+        kwargs.setdefault("highlightbackground", tokens["border"])
+        kwargs.setdefault("highlightthickness", 1)
+        kwargs.setdefault("bd", 0)
+        frame = tk.Frame(master, **kwargs)
 
     if resolved_width is not None or resolved_height is not None:
         # Keep requested dimensions instead of shrinking/growing to child content.

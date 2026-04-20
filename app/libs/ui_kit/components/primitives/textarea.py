@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit import ctk, use_ctk
+from ...design_system import semantic_colors
+from ._base import ctk, use_ctk
 
 
 def TextArea(  # noqa: N802
@@ -14,24 +14,19 @@ def TextArea(  # noqa: N802
 ):
     colors = semantic_colors()
     if use_ctk(master) and ctk is not None:
-        return ctk.CTkTextbox(
-            master,
-            fg_color=colors.surface,
-            border_color=colors.border,
-            border_width=1,
-            text_color=colors.text,
-            corner_radius=0,
-            height=height,
-            **kwargs,
-        )
+        kwargs.setdefault("fg_color", colors.surface)
+        kwargs.setdefault("border_color", colors.border)
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("text_color", colors.text)
+        kwargs.setdefault("corner_radius", 0)
+        kwargs.setdefault("height", height)
+        return ctk.CTkTextbox(master, **kwargs)
 
-    return tk.Text(
-        master,
-        bg=colors.surface,
-        fg=colors.text,
-        highlightbackground=colors.border,
-        highlightthickness=1,
-        bd=0,
-        height=max(3, int(height / 24)),
-        **kwargs,
-    )
+    kwargs.setdefault("bg", colors.surface)
+    kwargs.setdefault("fg", colors.text)
+    kwargs.setdefault("highlightbackground", colors.border)
+    kwargs.setdefault("highlightthickness", 1)
+    kwargs.setdefault("bd", 0)
+    kwargs.setdefault("height", max(3, int(height / 24)))
+    
+    return tk.Text(master, **kwargs)

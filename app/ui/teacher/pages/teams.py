@@ -3,8 +3,19 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 
-from libs.ui_kit import FormDialog, ToggleSelectionList
-from ui.teacher import TeamSection
+from libs.ui_kit import (
+    FormDialog, 
+    ToggleSelectionList, 
+    TeamListView, 
+    MemberListView,
+    DataTable, 
+    Section, 
+    Button, 
+    Label,
+    ButtonBar,
+    Flex,
+    palette
+)
 from ui.shared.page import Page
 
 
@@ -18,66 +29,93 @@ class TeacherTeamsPage(Page):
         super().__init__(dashboard)
 
     def on_mount(self) -> None:
-        self.team_section = TeamSection(
-            self,
-            self._team_create_modal,
-            self._add_team_member,
-            self._send_invite,
-            self._set_principal,
-            self._set_member_role,
-            self._edit_team_modal,
-            self._delete_team,
-            self._refresh_team_members,
-        )
-        self.team_section.pack(fill="both", expand=True)
+        # Header with create action
+        self.header = tk.Frame(self, bg=self["bg"])
+        self.header.pack(fill="x", padx=12, pady=12)
+        
+        tk.Label(
+            self.header, 
+            text="Team Management", 
+            font=("TkDefaultFont", 16, "bold"),
+            bg=self["bg"],
+            fg=palette()["text"]
+        ).pack(side="left")
+        
+        Button(self.header, text="Create Team", command=self._team_create_modal, size="sm").pack(side="right")
+
+        # Main List
+        self.list_view = TeamListView(self, on_team_select=self._on_team_selected)
+        self.list_view.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
     def on_show(self) -> None:
         self._refresh_students()
         self._refresh_teams()
 
-    # --- data refresh
     def _refresh_students(self) -> None:
         self._students = self.dashboard.services["class"].list_users(role="student")
-        choices = [f"{s['id']} {s['name']}" for s in self._students]
-        self.team_section.set_student_choices(choices)
 
     def _refresh_teams(self) -> None:
         class_id = self.dashboard.class_id
         if not class_id:
-            self.team_section.set_team_rows([])
+            self.list_view.set_teams([])
             return
         teams = self.dashboard.services["team"].list_teams(class_id)
         rows = []
         for team in teams:
             principal = team["principal_name"] or "-"
             rows.append((team["id"], team["name"], principal))
-        self.team_section.set_team_rows(rows)
-        if rows:
-            first = self.team_section.team_table.get_children()[0]
-            self.team_section.team_table.selection_set(first)
-            self._refresh_team_members()
+        self.list_view.set_teams(rows)
 
-    def _refresh_team_members(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            self._member_rows = []
-            self.team_section.set_member_rows([])
-            self.team_section.set_invite_rows([])
+    def _on_team_selected(self, team_id: int) -> None:
+        self.dashboard.slide_over.clear()
+        self.dashboard.slide_over.config(width=380) # Good width for details
+        
+        team = self.dashboard.services["team"].get_team(team_id)
+        if not team:
             return
+
+        body = self.dashboard.slide_over.body
+        bg = body["bg"]
+
+        # Header
+        Label(body, text=team["name"], weight="bold", size="lg").pack(anchor="w", pady=(0, 4))
+        Label(body, text=f"Team ID: #{team_id}", variant="muted").pack(anchor="w", pady=(0, 12))
+
+        # Members Section
+        members_sec = Section(body, "Team Members")
+        members_sec.pack(fill="x", pady=4)
+        
         members = self.dashboard.services["team"].list_team_members(team_id)
-        rows = [(m["id"], m["name"], m["email"], m["role"]) for m in members]
-        self._member_rows = rows
-        self.team_section.set_member_rows(rows)
-        self._refresh_team_invitations()
+        self._member_rows = [(m["id"], m["name"], m["email"], m["role"]) for m in members]
+        
+        member_list = MemberListView(members_sec.body, bg=members_sec.body["bg"])
+        member_list.pack(fill="x", pady=4)
+        member_list.set_members([(m["name"], m["email"], m["role"]) for m in members])
 
-    def _refresh_team_invitations(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            self.team_section.set_invite_rows([])
-            return
+        # Invites Section
         invites = self.dashboard.services["team"].list_invitations_for_team(team_id)
-        rows = [(i["id"], i["user"], i["status"]) for i in invites]
-        self.team_section.set_invite_rows(rows)
+        if invites:
+            invites_sec = Section(body, "Pending Invitations")
+            invites_sec.pack(fill="x", pady=8)
+            
+            invite_table = DataTable(invites_sec.body, ["Student", "Status"], height=len(invites))
+            invite_table.pack(fill="x")
+            invite_table.set_rows([(i["user"], i["status"]) for i in invites])
+
+        # Actions
+        actions = self.dashboard.slide_over.actions
+        Label(actions, text="Manage Team", size="sm", variant="muted").pack(anchor="w", pady=(0, 4))
+        
+        btn_bar = tk.Frame(actions, bg=bg)
+        btn_bar.pack(fill="x")
+        
+        Button(btn_bar, text="Add Member", size="xs", command=lambda: self._add_team_member(team_id)).pack(side="left", padx=2)
+        Button(btn_bar, text="Invite", size="xs", variant="outline", command=lambda: self._send_invite(team_id)).pack(side="left", padx=2)
+        Button(btn_bar, text="Set Principal", size="xs", variant="outline", command=lambda: self._set_principal(team_id)).pack(side="left", padx=2)
+        
+        danger_row = tk.Frame(actions, bg=bg)
+        danger_row.pack(fill="x", pady=(12, 0))
+        Button(danger_row, text="Delete Team", size="xs", variant="danger", command=lambda: self._delete_team(team_id)).pack(side="right")
 
     # --- dialog option builders
     def _student_options(self) -> tuple[list[str], dict[str, int]]:
@@ -87,15 +125,6 @@ class TeacherTeamsPage(Page):
             label = f"{student['name']} ({student['email']})"
             options.append(label)
             mapping[label] = int(student["id"])
-        return options, mapping
-
-    def _member_options(self) -> tuple[list[str], dict[str, int]]:
-        options: list[str] = []
-        mapping: dict[str, int] = {}
-        for user_id, name, email, role in self._member_rows:
-            label = f"{name} ({email}) · {role}"
-            options.append(label)
-            mapping[label] = int(user_id)
         return options, mapping
 
     # --- actions
@@ -108,7 +137,7 @@ class TeacherTeamsPage(Page):
         dialog = FormDialog(
             self,
             title="Create Team",
-            subtitle="Create a team and optionally pre-add students.",
+            subtitle="Create a new team and optionally add students.",
         )
         dialog.add_text("name", label="Team Name")
 
@@ -134,46 +163,14 @@ class TeacherTeamsPage(Page):
 
         dialog.add_actions(save, confirm_text="Create")
 
-    def _edit_team_modal(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
-        row = self.team_section.selected_team_row()
-        if not row:
-            return
-
-        dialog = FormDialog(self, title="Edit Team")
-        name_var = dialog.add_text("name", label="Team Name")
-        name_var.set(row[1])
-
-        def save() -> None:
-            team_name = dialog.value("name")
-            if not team_name:
-                messagebox.showwarning("Missing data", "Enter a team name.")
-                return
-            self.dashboard.services["team"].update_team(team_id, team_name)
-            dialog.destroy()
-            self._refresh_teams()
-
-        dialog.add_actions(save, confirm_text="Save")
-
-    def _delete_team(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
+    def _delete_team(self, team_id: int) -> None:
         if not messagebox.askyesno("Confirm", "Delete this team and its data?"):
             return
         self.dashboard.services["team"].delete_team(team_id)
+        self.dashboard.slide_over.clear()
         self._refresh_teams()
 
-    def _add_team_member(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
-
+    def _add_team_member(self, team_id: int) -> None:
         options, mapping = self._student_options()
         if not options:
             messagebox.showwarning("No students", "No students available to add.")
@@ -190,16 +187,11 @@ class TeacherTeamsPage(Page):
                 return
             self.dashboard.services["team"].add_team_member(team_id, user_id)
             dialog.destroy()
-            self._refresh_team_members()
+            self._on_team_selected(team_id)
 
         dialog.add_actions(save, confirm_text="Add")
 
-    def _send_invite(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
-
+    def _send_invite(self, team_id: int) -> None:
         options, mapping = self._student_options()
         if not options:
             messagebox.showwarning("No students", "No students available to invite.")
@@ -214,18 +206,13 @@ class TeacherTeamsPage(Page):
             if not user_id:
                 messagebox.showwarning("No student", "Select a student to invite.")
                 return
-            self.dashboard.services["team"].create_invitation(team_id, user_id)
+            self.services["team"].create_invitation(team_id, user_id)
             dialog.destroy()
-            self._refresh_team_invitations()
+            self._on_team_selected(team_id)
 
         dialog.add_actions(save, confirm_text="Send")
 
-    def _set_principal(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
-
+    def _set_principal(self, team_id: int) -> None:
         options, mapping = self._student_options()
         if not options:
             messagebox.showwarning("No students", "No students available.")
@@ -243,41 +230,6 @@ class TeacherTeamsPage(Page):
             self.dashboard.services["team"].update_team_principal(team_id, user_id)
             dialog.destroy()
             self._refresh_teams()
+            self._on_team_selected(team_id)
 
         dialog.add_actions(save, confirm_text="Set")
-
-    def _set_member_role(self) -> None:
-        team_id = self.team_section.selected_team_id()
-        if not team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
-
-        options, mapping = self._member_options()
-        if not options:
-            messagebox.showwarning("No members", "No team members available.")
-            return
-
-        dialog = FormDialog(self, title="Set Member Role")
-        dialog.add_select("member", label="Member", values=options)
-        dialog.add_select(
-            "role",
-            label="Role",
-            values=["Member", "Lead", "Reviewer"],
-        )
-
-        def save() -> None:
-            selected_member = dialog.value("member")
-            selected_role = dialog.value("role")
-            user_id = mapping.get(selected_member)
-            if not user_id:
-                messagebox.showwarning("No member", "Select a team member.")
-                return
-            if not selected_role:
-                messagebox.showwarning("No role", "Select a role.")
-                return
-
-            self.dashboard.services["team"].set_member_role(team_id, user_id, selected_role)
-            dialog.destroy()
-            self._refresh_team_members()
-
-        dialog.add_actions(save, confirm_text="Apply")

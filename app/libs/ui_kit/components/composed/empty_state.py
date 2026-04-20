@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from libs.ui_kit import Button, Card, Label
+from ..primitives import Button, Card, Label
 
 
 class EmptyState:

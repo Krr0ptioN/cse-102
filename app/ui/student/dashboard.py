@@ -13,9 +13,9 @@ from core.services import (
     validate_roadmap,
 )
 from ui.shared import DashboardBase, show_reports_window
-from libs.ui_kit import FormDialog, Modal, add_modal_actions
+from libs.ui_kit import FormDialog, Modal, add_modal_actions, palette
 from ui.shared.forms import CommentForm
-from ui.student.forms import TaskForm
+from ui.student.forms import TaskForm, CheckinForm
 from ui.student.pages import (
     StudentHomePage,
     StudentRoadmapPage,
@@ -75,34 +75,35 @@ class StudentDashboard(DashboardBase):
             self.add_demo_button()
         self.add_topbar_button("View Charts", self._show_charts)
         
+        # Initial context loading
         self._refresh_students()
         self._refresh_invitations()
         self._refresh_teams()
         
+        # Start at overview
         self._navigate("overview")
         self.log.success("Student dashboard ready for %s", self.current_user.email)
 
     def build_layout(self) -> None:
-        # Instantiate pages (they register themselves)
+        # 1. Configure Grid
+        self.configure_content_grid((1, 0)) # Main content + Sidebar
+        self.mount_slide_over()
+
+        # 2. Instantiate pages (they register themselves with the registry)
         StudentHomePage(self)
         StudentRoadmapPage(self)
         StudentTasksPage(self)
         StudentCheckinsPage(self)
         StudentCommentsPage(self)
         
-        # Access sections for data refresh callbacks
-        self.stats_row = self.pages["overview"].stats_row
+        # 3. Cache references to internal page sections for refresh calls
         self.roadmap_section = self.pages["roadmap"].section
-        self.task_section = self.pages["tasks"].section
-        self.comments_section = self.pages["comments"].section
-        self.checkins_section = self.pages["checkins"].section
+        self.task_section = self.pages["tasks"].list_view
+        self.comments_section = self.pages["comments"].thread
+        self.checkins_section = self.pages["checkins"].list_view
 
-        # Add special reports navigation item
+        # 4. Add special navigation items
         self.shell.add_nav_item("Reports", "reports")
-        
-        # Configure layout
-        self.configure_content_grid((1, 0)) # Main content + Drawer
-        self.mount_drawer(row=0, column=1)
 
     def _on_nav(self, route: str) -> None:
         if route == "reports":
@@ -131,7 +132,7 @@ class StudentDashboard(DashboardBase):
         labels, mapping = map_choices(choice_objs)
         self.team_choices = mapping
         self.roadmap_section.set_team_choices(labels)
-        self.log.debug("Loaded %d teams for student_id=%s", len(self.team_choices), self.active_student_id)
+        
         if self.team_choices:
             self.roadmap_section.team_select.current(0)
             self._load_roadmap()
@@ -143,12 +144,11 @@ class StudentDashboard(DashboardBase):
         self.current_roadmap_id = None
         self.current_roadmap_status = None
         self.roadmap_section.set_status("No roadmap")
-        self.task_section.set_task_rows([])
-        self.comments_section.set_comment_rows([])
-        self.task_section.set_update_rows([])
+        self.task_section.set_tasks([])
+        self.comments_section.set_comments([])
         self.roadmap_section.clear_tree()
-        self.checkins_section.set_rows([])
-        self.checkins_section.set_progress(0, 0, 0)
+        self.checkins_section.set_checkins([])
+        self.slide_over.clear()
 
     def _refresh_students(self) -> None:
         self.active_student_id = self.current_user.id
@@ -169,59 +169,31 @@ class StudentDashboard(DashboardBase):
         rows = [(i["id"], i["team"], i["status"]) for i in invites]
         self.roadmap_section.set_invite_rows(rows)
 
-    def _class_options_for_team_creation(self) -> tuple[list[str], dict[str, int]]:
-        classes = self.services["class"].list_classes()
-        options: list[str] = []
-        mapping: dict[str, int] = {}
-        for class_item in classes:
-            label = f"{class_item['name']} ({class_item['term']})"
-            options.append(label)
-            mapping[label] = int(class_item["id"])
-        return options, mapping
-
     def _create_team(self) -> None:
-        class_options, class_mapping = self._class_options_for_team_creation()
-        if not class_options:
+        classes = self.services["class"].list_classes()
+        if not classes:
             messagebox.showwarning("No classes", "No classes are available yet.")
             return
 
-        dialog = FormDialog(
-            self,
-            title="Create Team",
-            subtitle="Create a team and become its principal.",
-        )
+        options = [f"{c['name']} ({c['term']})" for c in classes]
+        mapping = {f"{c['name']} ({c['term']})": int(c['id']) for c in classes}
+
+        dialog = FormDialog(self, title="Create Team")
         dialog.add_text("team_name", label="Team Name")
-        dialog.add_select("class", label="Class", values=class_options)
+        dialog.add_select("class", label="Class", values=options)
 
         def save() -> None:
             team_name = dialog.value("team_name")
-            class_label = dialog.value("class")
-            class_id = class_mapping.get(class_label)
+            class_id = mapping.get(dialog.value("class"))
 
-            if not team_name:
-                messagebox.showwarning("Missing data", "Enter a team name.")
-                return
-            if not class_id:
-                messagebox.showwarning("Missing class", "Select a class.")
+            if not team_name or not class_id:
+                messagebox.showwarning("Missing data", "Fill in all fields.")
                 return
 
-            team_id = self.services["team"].create_team(
-                class_id,
-                team_name,
-                self.current_user.id,
-            )
+            team_id = self.services["team"].create_team(class_id, team_name, self.current_user.id)
             self.services["team"].update_team_principal(team_id, self.current_user.id)
             dialog.destroy()
-
             self._refresh_teams()
-            target_label = None
-            for label, choice in self.team_choices.items():
-                if choice.id == team_id:
-                    target_label = label
-                    break
-            if target_label:
-                self.roadmap_section.team_select.set(target_label)
-                self._load_roadmap()
 
         dialog.add_actions(save, confirm_text="Create")
 
@@ -230,84 +202,47 @@ class StudentDashboard(DashboardBase):
             messagebox.showwarning("No team", "Select a team first.")
             return
 
-        team = self.services["team"].get_team(self.current_team_id)
-        if not team or int(team.get("principal_user_id") or 0) != self.current_user.id:
-            messagebox.showwarning(
-                "Not allowed",
-                "Only the team principal can invite students.",
-            )
-            return
-
-        members = self.services["team"].list_team_members(self.current_team_id)
-        member_ids = {int(member["id"]) for member in members}
         students = self.services["class"].list_users(role="student")
-        eligible = [
-            student
-            for student in students
-            if int(student["id"]) not in member_ids
-            and int(student["id"]) != self.current_user.id
-        ]
-        if not eligible:
-            messagebox.showwarning(
-                "No eligible students",
-                "All students are already on the team or unavailable.",
-            )
-            return
+        eligible = [s for s in students if int(s["id"]) != self.current_user.id]
+        
+        options = [f"{s['name']} ({s['email']})" for s in eligible]
+        mapping = {f"{s['name']} ({s['email']})": int(s["id"]) for s in eligible}
 
-        options: list[str] = []
-        mapping: dict[str, int] = {}
-        for student in eligible:
-            label = f"{student['name']} ({student['email']})"
-            options.append(label)
-            mapping[label] = int(student["id"])
-
-        dialog = FormDialog(
-            self,
-            title="Invite Student",
-            subtitle="Send a team invitation to a student.",
-        )
+        dialog = FormDialog(self, title="Invite Student")
         dialog.add_select("student", label="Student", values=options)
 
-        def send_invite() -> None:
-            label = dialog.value("student")
-            user_id = mapping.get(label)
-            if not user_id:
-                messagebox.showwarning("No student", "Select a student to invite.")
-                return
-            self.services["team"].create_invitation(self.current_team_id, user_id)
-            dialog.destroy()
-            self._refresh_invitations()
-            messagebox.showinfo("Invite sent", "Student invitation has been sent.")
+        def send() -> None:
+            user_id = mapping.get(dialog.value("student"))
+            if user_id:
+                self.services["team"].create_invitation(self.current_team_id, user_id)
+                dialog.destroy()
+                self._refresh_invitations()
 
-        dialog.add_actions(send_invite, confirm_text="Send Invite")
+        dialog.add_actions(send, confirm_text="Send Invite")
 
     def _accept_invite(self) -> None:
         invite_id = self.roadmap_section.selected_invite_id()
-        if not invite_id:
-            messagebox.showwarning("No invite", "Select an invite to accept.")
-            return
-        self.services["team"].accept_invitation(invite_id)
-        self._refresh_invitations()
-        self._refresh_teams()
+        if invite_id:
+            self.services["team"].accept_invitation(invite_id)
+            self._refresh_invitations()
+            self._refresh_teams()
 
     def _decline_invite(self) -> None:
         invite_id = self.roadmap_section.selected_invite_id()
-        if not invite_id:
-            messagebox.showwarning("No invite", "Select an invite to decline.")
-            return
-        self.services["team"].decline_invitation(invite_id)
-        self._refresh_invitations()
+        if invite_id:
+            self.services["team"].decline_invitation(invite_id)
+            self._refresh_invitations()
 
     def _load_roadmap(self) -> None:
         selection = self.roadmap_section.selected_team()
-        if not selection:
-            return
+        if not selection: return
+        
         choice = self.team_choices.get(selection)
-        if not choice:
-            self.notifier.warn("Selected team is unavailable.")
-            return
+        if not choice: return
+        
         self.current_team_id = choice.id
         self._show_team_details()
+        
         roadmap = self.services["roadmap"].get_latest_roadmap(self.current_team_id)
         if roadmap:
             self.current_roadmap_id = roadmap["id"]
@@ -317,98 +252,85 @@ class StudentDashboard(DashboardBase):
             self.current_roadmap_id = None
             self.current_roadmap_status = None
             self.roadmap_section.set_status("No roadmap")
-        self._refresh_team_members()
+            
         self._refresh_roadmap_tree()
         self._refresh_task_list()
         self._refresh_comments()
         self._refresh_checkins()
-        self._refresh_stats()
+        
+        # Trigger page refreshes if they are visible
+        active_page = self.pages.get(self._current_page_key)
+        if active_page:
+            active_page.on_show()
 
     def _show_team_details(self) -> None:
-        if not self.current_team_id:
-            return
+        if not self.current_team_id: return
         team = self.services["team"].get_team(self.current_team_id)
-        if not team:
-            return
-        self.drawer.clear()
+        if not team: return
+        
+        self.slide_over.clear()
         self._render_team_header(team)
 
     def _render_team_header(self, team: dict) -> None:
         principal = team.get("principal_name") or "Unassigned"
-        self.drawer.render_team_header(team["id"], team["name"], principal)
+        self.slide_over.render_team_header(team["id"], team["name"], principal)
 
     def _ensure_roadmap(self) -> int | None:
         if not self.current_team_id:
             messagebox.showwarning("No team", "Select a team first.")
             return None
         if not self.current_roadmap_id:
-            self.current_roadmap_id = self.services["roadmap"].create_roadmap(
-                self.current_team_id
-            )
+            self.current_roadmap_id = self.services["roadmap"].create_roadmap(self.current_team_id)
             self.current_roadmap_status = "Draft"
             self.roadmap_section.set_status("Status: Draft")
         return self.current_roadmap_id
 
     def _add_phase(self) -> None:
         roadmap_id = self._ensure_roadmap()
-        if not roadmap_id:
-            return
+        if not roadmap_id: return
         name = self.roadmap_section.phase_entry.get().strip()
-        if not name:
-            messagebox.showwarning("Missing data", "Enter a phase name.")
-            return
+        if not name: return
+        
         phases = self.services["roadmap"].list_phases_with_tasks(roadmap_id)
-        sort_order = len(phases) + 1
-        self.services["roadmap"].create_phase(roadmap_id, name, sort_order)
+        self.services["roadmap"].create_phase(roadmap_id, name, len(phases) + 1)
         self.roadmap_section.phase_entry.delete(0, "end")
         self._refresh_roadmap_tree()
 
     def _add_task(self) -> None:
         roadmap_id = self._ensure_roadmap()
-        if not roadmap_id:
+        if not roadmap_id: return
+        
+        phase_id = self._selected_phase_id()
+        if not phase_id:
+            messagebox.showwarning("No phase", "Select a phase first.")
             return
+            
         errors = self.roadmap_section.task_errors()
         if errors:
             messagebox.showwarning("Invalid data", "\n".join(errors))
             return
+            
         data = self.roadmap_section.task_data()
-        title = data["title"]
-        weight_text = data["weight"]
-        phase_id = self._selected_phase_id()
-        if not phase_id:
-            messagebox.showwarning("No phase", "Select a phase in the roadmap tree.")
-            return
-        self.services["roadmap"].create_task(phase_id, title, int(weight_text))
+        self.services["roadmap"].create_task(phase_id, data["title"], int(data["weight"]))
         self.roadmap_section.clear_task()
         self._refresh_roadmap_tree()
         self._refresh_task_list()
-        self._refresh_stats()
 
     def _submit_roadmap(self) -> None:
-        if not self.current_roadmap_id:
-            messagebox.showwarning("No roadmap", "Create a roadmap first.")
-            return
-        if self.current_roadmap_status != "Draft":
-            messagebox.showwarning(
-                "Locked", "Roadmap is already submitted or approved."
-            )
-            return
+        if not self.current_roadmap_id: return
+        if self.current_roadmap_status != "Draft": return
+        
         phases = self.services["roadmap"].list_phases_with_tasks(self.current_roadmap_id)
-        payload = [{"tasks": [task["weight"] for task in p["tasks"]]} for p in phases]
+        payload = [{"tasks": [t["weight"] for t in p["tasks"]]} for p in phases]
         result = validate_roadmap(payload)
+        
         if not result["ok"]:
-            messagebox.showwarning("Invalid roadmap", result["reason"])
+            messagebox.showwarning("Invalid", result["reason"])
             return
-        if result.get("weight_warning"):
-            proceed = messagebox.askyesno(
-                "Weight warning", "Weights do not sum to 100. Submit anyway?"
-            )
-            if not proceed:
-                return
+            
         self.services["roadmap"].submit_roadmap(self.current_roadmap_id)
         self.current_roadmap_status = "Submitted"
         self.roadmap_section.set_status("Status: Submitted")
-        self._refresh_stats()
 
     def _refresh_roadmap_tree(self) -> None:
         if not self.current_roadmap_id:
@@ -419,380 +341,130 @@ class StudentDashboard(DashboardBase):
 
     def _refresh_task_list(self) -> None:
         if not self.current_roadmap_id:
-            set_table_with_placeholder(self.task_section.task_table, [], "No tasks")
+            self.task_section.set_tasks([])
             return
-        self.tasks_cache = self.services["task"].list_tasks_for_roadmap(
-            self.current_roadmap_id
-        )
-        rows = [
-            (t["id"], t["title"], t["status"], t["weight"]) for t in self.tasks_cache
-        ]
-        set_table_with_placeholder(self.task_section.task_table, rows, "No tasks")
-        self._refresh_progress()
-        self._refresh_stats()
+        tasks = self.services["task"].list_tasks_for_roadmap(self.current_roadmap_id)
+        self.task_section.set_tasks([(t["id"], t["title"], t["status"], t["weight"]) for t in tasks])
 
     def _refresh_comments(self) -> None:
         if not self.current_roadmap_id:
-            set_table_with_placeholder(
-                self.comments_section.comment_table, [], "No comments"
-            )
+            self.comments_section.set_comments([])
             return
         comments = self.services["roadmap"].list_roadmap_comments(self.current_roadmap_id)
-        rows = [(c["author"], c["text"], c["created_at"]) for c in comments]
-        set_table_with_placeholder(
-            self.comments_section.comment_table, rows, "No comments"
-        )
+        self.comments_section.set_comments([(c["author"], c["text"], c["created_at"]) for c in comments])
 
     def _refresh_checkins(self) -> None:
         if not self.current_team_id:
-            self.checkins_section.set_rows([])
+            self.checkins_section.set_checkins([])
             return
         checkins = self.services["checkin"].list_checkins_for_team(self.current_team_id)
-        rows = [
-            (
-                c["id"],
-                f"{c['week_start']} → {c['week_end']}",
-                c["status"],
-                f"{c.get('metrics_percent', c.get('percent', 0))}%",
-                c["submitted_at"],
-            )
+        self.checkins_section.set_checkins([
+            (c["id"], f"{c['week_start']} → {c['week_end']}", c["status"], f"{c.get('metrics_percent', 0)}%", c["submitted_at"])
             for c in checkins
-        ]
-        self.checkins_section.set_rows(rows)
+        ])
 
-    def _refresh_progress(self) -> None:
-        if not self.current_team_id:
-            self.checkins_section.set_progress(0, 0, 0)
-            return
-        metrics = self.services["checkin"].compute_metrics(self.current_team_id)
-        self.checkins_section.set_progress(
-            metrics["percent"], metrics["done"], metrics["total"]
-        )
-
-    def _set_task_status(self, status: str) -> None:
-        if self.current_roadmap_status != "Approved":
-            messagebox.showwarning("Not approved", "Roadmap is not approved yet.")
-            return
-        task_id = self._selected_task_id()
-        if not task_id:
-            messagebox.showwarning("No task", "Select a task first.")
-            return
+    def _set_task_status(self, task_id: int, status: str) -> None:
         self.services["task"].update_task_status(task_id, status)
         self._refresh_task_list()
 
-    def _add_update(self) -> None:
-        task_id = self._selected_task_id()
-        if not task_id:
-            self.notifier.warn("Select a task first.", "No task")
-            return
-        if not self.active_student_id:
-            self.notifier.warn("No active user.", "Not authenticated")
-            return
-        if not self._current_user_is_team_member():
-            self.notifier.warn("You are not a member of this team.", "Access denied")
-            return
-        text = self.task_section.get_update_text()
-        if not text:
-            self.notifier.warn("Enter an update note.", "Missing data")
-            return
-        self.services["task"].add_update(task_id, self.active_student_id, text)
-        self.task_section.clear_update_text()
-        self._refresh_updates()
+    def _add_update(self, task_id: int, text: str) -> None:
+        self.services["task"].add_update(task_id, self.current_user.id, text)
 
-    def _current_week_range(self) -> tuple[str, str]:
-        today = date.today()
-        start = today - timedelta(days=today.weekday())
-        end = start + timedelta(days=6)
-        return start.isoformat(), end.isoformat()
-
-    def _submit_checkin(self) -> None:
-        if not self.current_team_id:
-            messagebox.showwarning("No team", "Select a team first.")
-            return
-        if not self.current_roadmap_id:
-            messagebox.showwarning("No roadmap", "Create a roadmap first.")
-            return
-        metrics = self.services["checkin"].compute_metrics(self.current_team_id)
-        if metrics["total"] == 0:
-            messagebox.showwarning(
-                "No tasks", "Add tasks before submitting a check-in."
-            )
-            return
-        errors = self.checkins_section.errors()
-        if errors:
-            messagebox.showwarning("Invalid data", "\n".join(errors))
-            return
-        week_start, week_end = self._current_week_range()
-        if self.services["checkin"].checkin_exists(self.current_team_id, week_start):
-            messagebox.showwarning(
-                "Already submitted", "This week already has a check-in."
-            )
-            return
-        data = self.checkins_section.get_data()
-        self.services["checkin"].create_checkin(
-            self.current_team_id,
-            week_start,
-            week_end,
-            data["status"],
-            data["wins"],
-            data["risks"],
-            data["next_goal"],
-            data.get("help_needed") or None,
-            metrics,
-        )
-        self.checkins_section.clear_form()
-        self._refresh_checkins()
-
-    def _add_comment(self) -> None:
-        if not self.current_roadmap_id:
-            self.notifier.warn("Create a roadmap first.", "No roadmap")
-            return
-        if not self._current_user_is_team_member():
-            self.notifier.warn("You are not a member of this team.", "Access denied")
-            return
-        user_name = self.current_user.name
-        modal = Modal(self, "Add Comment")
-        form = CommentForm()
+    def _submit_checkin(self, text: str) -> None:
+        if not self.current_team_id: return
+        
+        modal = Modal(self, "Weekly Check-in")
+        form = CheckinForm()
         form.render(modal.body)
-
+        
         def save() -> None:
-            if not validate_or_warn(form.validate(), self.notifier):
-                return
-            text = form.get_data()["text"]
-            self.services["roadmap"].add_roadmap_comment(
-                self.current_roadmap_id, user_name, text, "comment"
+            if not validate_or_warn(form.validate(), self.notifier): return
+            
+            data = form.get_data()
+            metrics = self.services["checkin"].compute_metrics(self.current_team_id)
+            today = date.today()
+            start = today - timedelta(days=today.weekday())
+            end = start + timedelta(days=6)
+            
+            self.services["checkin"].create_checkin(
+                self.current_team_id,
+                start.isoformat(),
+                end.isoformat(),
+                data["status"],
+                data["wins"],
+                data["risks"],
+                data["next_goal"],
+                data.get("help_needed"),
+                metrics
             )
             modal.destroy()
+            self._refresh_checkins()
+            
+        add_modal_actions(modal, save, confirm_text="Submit")
+
+    def _add_comment(self, text: str) -> None:
+        if self.current_roadmap_id:
+            self.services["roadmap"].add_roadmap_comment(self.current_roadmap_id, self.current_user.name, text)
             self._refresh_comments()
 
-        add_modal_actions(modal, save, confirm_text="Save")
-
-    def _refresh_updates(self) -> None:
-        task_id = self._selected_task_id()
-        if not task_id:
-            self.task_section.set_update_rows([])
-            return
-        updates = self.services["task"].list_updates_for_task(task_id)
-        rows = [(u["user"], u["text"], u["created_at"]) for u in updates]
-        self.task_section.set_update_rows(rows)
-        self._show_task_details(task_id, updates)
-
-    def _refresh_team_members(self) -> None:
-        if not self.current_team_id:
-            return
-        members = self.services["team"].list_team_members(self.current_team_id)
-        is_member = any(m["id"] == self.current_user.id for m in members)
-        if is_member:
-            label = f"{self.current_user.name} (#{self.current_user.id})"
-            labels = [label]
-            self.member_choices = {label: Choice(id=self.current_user.id, label=label)}
-        else:
-            labels = []
-            self.member_choices = {}
-        self.task_section.set_member_choices(labels)
-        if labels:
-            self.task_section.member_select.current(0)
-
-    def _current_user_is_team_member(self) -> bool:
-        if not self.current_team_id:
-            return False
-        members = self.services["team"].list_team_members(self.current_team_id)
-        return any(m["id"] == self.current_user.id for m in members)
-
-    def _refresh_stats(self) -> None:
-        status = self.current_roadmap_status or "-"
-        done = len(
-            [t for t in getattr(self, "tasks_cache", []) if t["status"] == "Done"]
-        )
-        self.stats_row.set_values(status, done)
-
     def _selected_phase_id(self) -> int | None:
-        selection = self.roadmap_section.tree.selection()
-        if not selection:
-            return None
-        item_id = selection[0]
-        if item_id.startswith("phase-"):
-            return int(item_id.split("-", 1)[1])
-        if item_id.startswith("task-"):
-            parent = self.roadmap_section.tree.parent(item_id)
-            if parent.startswith("phase-"):
-                return int(parent.split("-", 1)[1])
-        return None
+        # Fallback to first phase if no selection mechanism in PhaseListView yet
+        phases = self.services["roadmap"].list_phases_with_tasks(self.current_roadmap_id) if self.current_roadmap_id else []
+        return phases[0]["id"] if phases else None
 
-    def _selected_task_id(self) -> int | None:
-        return self.task_section.selected_task_id()
-
-    def _show_task_details(self, task_id: int, updates: list[dict]) -> None:
-        row = None
-        for task in getattr(self, "tasks_cache", []):
-            if task["id"] == task_id:
-                row = task
-                break
-        if not row:
-            return
-        self.drawer.clear()
-        team = (
-            self.services["team"].get_team(self.current_team_id)
-            if self.current_team_id
-            else None
-        )
-        if team:
-            self._render_team_header(team)
-        body_bg = self.drawer.body["bg"]
-        from libs.ui_kit import Label as KitLabel
-        from libs.ui_kit import Flex as KitFlex
-        KitLabel(self.drawer.body, text=f"Task #{row['id']}", bg=body_bg).pack(anchor="w")
-        KitLabel(self.drawer.body, text=f"Title: {row['title']}", bg=body_bg).pack(
-            anchor="w"
-        )
-        KitLabel(self.drawer.body, text=f"Status: {row['status']}", bg=body_bg).pack(
-            anchor="w"
-        )
-        KitLabel(self.drawer.body, text=f"Weight: {row['weight']}", bg=body_bg).pack(
-            anchor="w"
-        )
-        KitLabel(
-            self.drawer.body,
-            text="Recent Updates",
-            weight="bold",
-            bg=body_bg,
-        ).pack(anchor="w", pady=(10, 4))
-        if not updates:
-            KitLabel(
-                self.drawer.body,
-                text="No updates yet",
-                variant="muted",
-                bg=body_bg,
-            ).pack(anchor="w")
-            return
-        for upd in updates[:5]:
-            update_row = KitFlex(self.drawer.body, direction="row", gap="xs", panel=True)
-            update_row.pack(fill="x", pady=2)
-            update_row.add(
-                KitLabel(update_row, text="●", variant="accent", bg=update_row["bg"])
-            )
-            update_row.add(
-                KitLabel(
-                    update_row,
-                    text=f"{upd['user']}: {upd['text']}",
-                    wraplength=200,
-                    justify="left",
-                    bg=update_row["bg"],
-                ),
-                grow=True,
-                fill="x",
-            )
-            update_row.push()
-            update_row.add(
-                KitLabel(
-                    update_row,
-                    text=upd["created_at"],
-                    variant="muted",
-                    bg=update_row["bg"],
-                )
-            )
-
-    def _edit_phase(self) -> None:
-        phase_id = self._selected_phase_id()
-        if not phase_id:
-            messagebox.showwarning("No phase", "Select a phase first.")
-            return
+    def _edit_phase(self, phase_id: int) -> None:
         modal = Modal(self, "Edit Phase")
-        from libs.ui_kit import Grid as KitGrid
-        from libs.ui_kit import Label as KitLabel
-        from libs.ui_kit import Input as KitInput
-        form = KitGrid(modal.body, columns=2, gap="sm", panel=True)
-        form.pack(fill="x")
-        form.set_column_weights(0, 1)
-        KitLabel(form, text="Phase Name", variant="muted", bg=form["bg"]).grid(
-            row=0, column=0, sticky="w"
-        )
-        name_entry = KitInput(form, width=24)
-        form.add(name_entry, row=0, column=1, sticky="ew")
-        current = self.roadmap_section.tree.item(f"phase-{phase_id}", "text").replace(
-            "Phase: ", ""
-        )
-        name_entry.insert(0, current)
+        dialog = FormDialog(modal.body, title="")
+        name_var = dialog.add_text("name", label="Phase Name")
+        
+        # Get current name
+        roadmap = self.services["roadmap"].list_phases_with_tasks(self.current_roadmap_id)
+        phase = next((p for p in roadmap if p["id"] == phase_id), None)
+        if phase: name_var.set(phase["name"])
 
         def save() -> None:
-            name = name_entry.get().strip()
-            if not name:
-                messagebox.showwarning("Missing data", "Enter a phase name.")
-                return
-            self.services["roadmap"].update_phase(phase_id, name)
-            modal.destroy()
+            name = dialog.value("name")
+            if name:
+                self.services["roadmap"].update_phase(phase_id, name)
+                modal.destroy()
+                self._refresh_roadmap_tree()
+        
+        dialog.add_actions(save, confirm_text="Update")
+
+    def _delete_phase(self, phase_id: int) -> None:
+        if messagebox.askyesno("Confirm", "Delete this phase and all its tasks?"):
+            self.services["roadmap"].delete_phase(phase_id)
             self._refresh_roadmap_tree()
+            self._refresh_task_list()
 
-        add_modal_actions(modal, save, confirm_text="Save")
-
-    def _delete_phase(self) -> None:
-        phase_id = self._selected_phase_id()
-        if not phase_id:
-            messagebox.showwarning("No phase", "Select a phase first.")
-            return
-        if not messagebox.askyesno("Confirm", "Delete this phase and its tasks?"):
-            return
-        self.services["roadmap"].delete_phase(phase_id)
-        self._refresh_roadmap_tree()
-        self._refresh_task_list()
-
-    def _edit_task(self) -> None:
-        task_id = self._selected_task_id()
-        if not task_id:
-            messagebox.showwarning("No task", "Select a task first.")
-            return
-        row = self.task_section.task_table.item(
-            self.task_section.task_table.selection()[0], "values"
-        )
+    def _edit_task(self, task_id: int) -> None:
+        task = self.services["task"].get_task(task_id)
+        if not task: return
+        
         modal = Modal(self, "Edit Task")
         form = TaskForm()
-        form.render(modal.body, columns=1)
-        form.set_data({"title": row[1], "weight": row[3]})
+        form.render(modal.body)
+        form.set_data({"title": task["title"], "weight": task["weight"]})
 
         def save() -> None:
-            errors = form.validate()
-            if errors:
-                messagebox.showwarning("Invalid data", "\n".join(errors))
-                return
+            if not validate_or_warn(form.validate(), self.notifier): return
             data = form.get_data()
-            self.services["roadmap"].update_task_details(
-                task_id, data["title"], int(data["weight"])
-            )
+            self.services["roadmap"].update_task_details(task_id, data["title"], int(data["weight"]))
             modal.destroy()
             self._refresh_roadmap_tree()
             self._refresh_task_list()
 
-        add_modal_actions(modal, save, confirm_text="Save")
+        add_modal_actions(modal, save, confirm_text="Update")
 
-    def _delete_task(self) -> None:
-        task_id = self._selected_task_id()
-        if not task_id:
-            messagebox.showwarning("No task", "Select a task first.")
-            return
-        if not messagebox.askyesno("Confirm", "Delete this task?"):
-            return
-        self.services["roadmap"].delete_task(task_id)
-        self._refresh_roadmap_tree()
-        self._refresh_task_list()
+    def _delete_task(self, task_id: int) -> None:
+        if messagebox.askyesno("Confirm", "Delete this task?"):
+            self.services["roadmap"].delete_task(task_id)
+            self._refresh_roadmap_tree()
+            self._refresh_task_list()
 
     def _show_charts(self) -> None:
-        if not self.current_roadmap_id:
-            messagebox.showwarning("No roadmap", "Create a roadmap first.")
-            return
-        tasks = self.services["task"].list_tasks_for_roadmap(self.current_roadmap_id)
-        team = (
-            self.services["team"].get_team(self.current_team_id)
-            if self.current_team_id
-            else None
-        )
-        principal = team.get("principal_name") if team else None
-        team_name = team.get("name") if team else "Team"
-        title = f"{team_name} Charts" if team else "Team Charts"
-        if principal:
-            title = f"{title} · Principal: {principal}"
-        checkins = (
-            self.services["checkin"].list_checkins_for_team(self.current_team_id)
-            if self.current_team_id
-            else []
-        )
-        show_reports_window(self, title, team_name, tasks, checkins)
+        if not self.current_team_id: return
+        team = self.services["team"].get_team(self.current_team_id)
+        tasks = self.services["task"].list_tasks_for_roadmap(self.current_roadmap_id) if self.current_roadmap_id else []
+        checkins = self.services["checkin"].list_checkins_for_team(self.current_team_id)
+        show_reports_window(self, f"{team['name']} Charts", team["name"], tasks, checkins)

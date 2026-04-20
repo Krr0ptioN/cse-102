@@ -10,8 +10,9 @@ from libs.ui_kit import (
     Input,
     Label,
     SectionHeader,
+    PhaseListView,
+    palette
 )
-from libs.ui_kit.theme import palette
 
 
 class RoadmapReviewSection(tk.Frame):
@@ -29,91 +30,45 @@ class RoadmapReviewSection(tk.Frame):
         header = SectionHeader(
             self,
             title="Roadmap Review",
-            subtitle="Review submissions, add comments, and approve ready plans.",
+            subtitle="Review team implementation plans and provide feedback.",
         )
         header.pack(fill="x", padx=12, pady=(12, 8))
 
-        roadmap_card = Card(self)
-        roadmap_card.pack(fill="both", expand=True, padx=12, pady=(0, 8))
-        Label(roadmap_card, text="Roadmaps", weight="bold").pack(
-            anchor="w", padx=12, pady=(12, 6)
-        )
-        self.roadmap_filter_var = tk.StringVar(value="")
-        roadmap_filter_row = tk.Frame(roadmap_card, bg=roadmap_card["bg"])
-        roadmap_filter_row.pack(fill="x", padx=12, pady=(0, 8))
-        tk.Label(roadmap_filter_row, text="Filter", bg=roadmap_card["bg"]).pack(
-            side="left"
-        )
-        self.roadmap_filter_entry = Input(
-            roadmap_filter_row,
-            width=30,
-            textvariable=self.roadmap_filter_var,
-        )
-        self.roadmap_filter_entry.pack(side="left", padx=(8, 8))
-        self.roadmap_filter_entry.bind(
-            "<KeyRelease>",
-            lambda _e: self._apply_roadmap_filter(),
-        )
-        Button(
-            roadmap_filter_row,
-            text="Clear",
-            size="sm",
-            variant="secondary",
-            command=self._clear_roadmap_filter,
-        ).pack(side="left")
+        # Horizontal split: Left list of roadmaps, Right detail tree
+        main_body = tk.Frame(self, bg=self["bg"])
+        main_body.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        main_body.columnconfigure(0, weight=1)
+        main_body.columnconfigure(1, weight=2)
+        main_body.rowconfigure(0, weight=1)
 
+        # Left Column: Roadmap List
+        list_card = Card(main_body)
+        list_card.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
+        
+        Label(list_card, text="Submitted Plans", weight="bold").pack(anchor="w", padx=12, pady=12)
+        
         self.roadmap_table = DataTable(
-            roadmap_card, ["Id", "Team", "Principal", "Status"], height=7
+            list_card, ["Id", "Team", "Status"], height=10
         )
-        self.roadmap_table.pack(fill="both", expand=True, padx=12, pady=(0, 10))
-        self.roadmap_table.bind("<<TreeviewSelect>>", lambda _e: self.on_select())
+        self.roadmap_table.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.roadmap_table.bind("<<TreeviewSelect>>", lambda _e: self._on_roadmap_click())
 
-        actions = ButtonBar(roadmap_card)
-        actions.pack(fill="x", padx=12, pady=(0, 12))
-        actions.add("Add Comment", self.on_add_comment)
-        actions.add("Approve Selected", self.on_approve, side="right")
-
-        comments_card = Card(self)
-        comments_card.pack(fill="both", expand=True, padx=12, pady=(0, 12))
-        Label(comments_card, text="Comments", weight="bold").pack(
-            anchor="w", padx=12, pady=(12, 6)
-        )
-        self.comment_filter_var = tk.StringVar(value="")
-        comment_filter_row = tk.Frame(comments_card, bg=comments_card["bg"])
-        comment_filter_row.pack(fill="x", padx=12, pady=(0, 8))
-        tk.Label(comment_filter_row, text="Filter", bg=comments_card["bg"]).pack(
-            side="left"
-        )
-        self.comment_filter_entry = Input(
-            comment_filter_row,
-            width=30,
-            textvariable=self.comment_filter_var,
-        )
-        self.comment_filter_entry.pack(side="left", padx=(8, 8))
-        self.comment_filter_entry.bind(
-            "<KeyRelease>",
-            lambda _e: self._apply_comment_filter(),
-        )
-        Button(
-            comment_filter_row,
-            text="Clear",
-            size="sm",
-            variant="secondary",
-            command=self._clear_comment_filter,
-        ).pack(side="left")
-
-        self.comment_table = DataTable(
-            comments_card, ["Author", "Comment", "Time"], height=4
-        )
-        self.comment_table.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        # Right Column: Phase Detail
+        detail_card = Card(main_body)
+        detail_card.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
+        
+        Label(detail_card, text="Plan Detail", weight="bold").pack(anchor="w", padx=12, pady=12)
+        
+        self.phase_list = PhaseListView(detail_card)
+        self.phase_list.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
     def set_roadmap_rows(self, rows: list[tuple]) -> None:
-        self.roadmap_table.set_rows(rows)
-        self._apply_roadmap_filter()
+        # Filter for only relevant columns for the small table
+        short_rows = [(r[0], r[1], r[3]) for r in rows]
+        self.roadmap_table.set_rows(short_rows)
 
-    def set_comment_rows(self, rows: list[tuple]) -> None:
-        self.comment_table.set_rows(rows)
-        self._apply_comment_filter()
+    def set_phase_data(self, phases: list[dict]) -> None:
+        self.phase_list.set_phases(phases)
 
     def selected_roadmap_id(self) -> int | None:
         selection = self.roadmap_table.selection()
@@ -121,27 +76,5 @@ class RoadmapReviewSection(tk.Frame):
             return None
         return int(self.roadmap_table.item(selection[0], "values")[0])
 
-    def selected_roadmap_row(self) -> tuple | None:
-        selection = self.roadmap_table.selection()
-        if not selection:
-            return None
-        return self.roadmap_table.item(selection[0], "values")
-
-    def _apply_roadmap_filter(self) -> None:
-        self.roadmap_table.apply_filter(
-            self.roadmap_filter_var.get().strip(),
-            columns=(1, 2, 3),
-        )
-
-    def _clear_roadmap_filter(self) -> None:
-        self.roadmap_filter_var.set("")
-        self._apply_roadmap_filter()
-
-    def _apply_comment_filter(self) -> None:
-        self.comment_table.apply_filter(
-            self.comment_filter_var.get().strip(), columns=(0, 1)
-        )
-
-    def _clear_comment_filter(self) -> None:
-        self.comment_filter_var.set("")
-        self._apply_comment_filter()
+    def _on_roadmap_click(self) -> None:
+        self.on_select() # This triggers the page logic to fetch phases and update slide-over

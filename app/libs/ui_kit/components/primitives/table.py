@@ -3,8 +3,8 @@ from __future__ import annotations
 import tkinter.font as tkfont
 from tkinter import ttk
 
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit import tk_style
+from ...design_system import semantic_colors
+from ._base import tk_style
 
 
 class Table(ttk.Treeview):

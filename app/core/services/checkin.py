@@ -68,5 +68,8 @@ class CheckinService(Service):
     def approve_checkin(self, checkin_id: int) -> None:
         self.repo.approve_checkin(checkin_id)
 
+    def update_checkin_status(self, checkin_id: int, status: str) -> None:
+        self.repo.update_checkin_status(checkin_id, status)
+
     def list_checkin_comments(self, checkin_id: int) -> list[dict]:
         return self.repo.list_checkin_comments(checkin_id)

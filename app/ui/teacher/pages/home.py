@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit import Button, Card, DataTable, Input, SectionHeader, StatCard
+from libs.ui_kit import (
+    Card, 
+    SectionHeader, 
+    StatCard, 
+    CheckinListView, 
+    TaskListView,
+    Flex
+)
 from ui.shared.page import Page
 
 
@@ -12,107 +19,41 @@ class TeacherHomePage(Page):
     title = "Dashboard"
     route = "dashboard"
 
-    def __init__(self, dashboard) -> None:
-        super().__init__(dashboard)
-
     def on_mount(self) -> None:
-        top = tk.Frame(self, bg=self["bg"])
-        top.pack(fill="x", padx=10, pady=(10, 4))
+        # Top Stats
+        self.stats_container = tk.Frame(self, bg=self["bg"])
+        self.stats_container.pack(fill="x", padx=12, pady=(12, 0))
 
-        self.stats_card = Card(top)
-        self.stats_card.pack(fill="x", padx=4, pady=4)
-        SectionHeader(
-            self.stats_card,
-            title="Overview",
-            subtitle="Snapshot for this class",
-        ).pack(fill="x", padx=10, pady=(8, 2))
-
-        stats_body = tk.Frame(self.stats_card, bg=self.stats_card["bg"])
-        stats_body.pack(fill="x", padx=10, pady=(0, 10))
         self._stats = {
-            "Students": StatCard(stats_body, "Students", "0"),
-            "Teams": StatCard(stats_body, "Teams", "0"),
-            "Roadmaps": StatCard(stats_body, "Roadmaps", "0"),
+            "Students": StatCard(self.stats_container, "Students", "0"),
+            "Teams": StatCard(self.stats_container, "Teams", "0"),
+            "Roadmaps": StatCard(self.stats_container, "Roadmaps", "0"),
         }
         for card in self._stats.values():
-            card.pack(side="left", fill="x", expand=True, padx=6, pady=4)
+            card.pack(side="left", fill="x", expand=True, padx=4)
 
-        mid = tk.Frame(self, bg=self["bg"])
-        mid.pack(fill="both", expand=True, padx=10, pady=(4, 10))
-        mid.columnconfigure(0, weight=1)
-        mid.columnconfigure(1, weight=1)
+        # Main Grid for Activity
+        self.grid_container = tk.Frame(self, bg=self["bg"])
+        self.grid_container.pack(fill="both", expand=True, padx=8, pady=8)
+        self.grid_container.columnconfigure(0, weight=1)
+        self.grid_container.columnconfigure(1, weight=1)
+        self.grid_container.rowconfigure(0, weight=1)
 
-        checkins_card = Card(mid)
-        checkins_card.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
-        SectionHeader(checkins_card, title="Recent Check-ins").pack(
-            fill="x", padx=10, pady=(8, 2)
-        )
-        self.checkins_filter_var = tk.StringVar(value="")
-        checkins_filter_row = tk.Frame(checkins_card, bg=checkins_card["bg"])
-        checkins_filter_row.pack(fill="x", padx=10, pady=(0, 8))
-        tk.Label(checkins_filter_row, text="Filter", bg=checkins_card["bg"]).pack(
-            side="left"
-        )
-        self.checkins_filter_entry = Input(
-            checkins_filter_row,
-            width=24,
-            textvariable=self.checkins_filter_var,
-        )
-        self.checkins_filter_entry.pack(side="left", padx=(8, 8))
-        self.checkins_filter_entry.bind(
-            "<KeyRelease>",
-            lambda _e: self._apply_checkins_filter(),
-        )
-        Button(
-            checkins_filter_row,
-            text="Clear",
-            size="sm",
-            variant="secondary",
-            command=self._clear_checkins_filter,
-        ).pack(side="left")
+        # Recent Check-ins Column
+        checkins_col = tk.Frame(self.grid_container, bg=self["bg"])
+        checkins_col.grid(row=0, column=0, sticky="nsew", padx=4)
+        
+        SectionHeader(checkins_col, title="Recent Check-ins", subtitle="Latest team updates").pack(fill="x", padx=4)
+        self.checkins_list = CheckinListView(checkins_col, on_checkin_select=self._view_checkin)
+        self.checkins_list.pack(fill="both", expand=True, pady=4)
 
-        self.checkins_table = DataTable(
-            checkins_card,
-            ["ID", "Team", "Status", "Week", "%"],
-            height=8,
-        )
-        self.checkins_table.pack(fill="both", expand=True, padx=10, pady=(2, 10))
-
-        roadmaps_card = Card(mid)
-        roadmaps_card.grid(row=0, column=1, sticky="nsew", padx=4, pady=4)
-        SectionHeader(roadmaps_card, title="Recent Roadmaps").pack(
-            fill="x", padx=10, pady=(8, 2)
-        )
-        self.roadmaps_filter_var = tk.StringVar(value="")
-        roadmaps_filter_row = tk.Frame(roadmaps_card, bg=roadmaps_card["bg"])
-        roadmaps_filter_row.pack(fill="x", padx=10, pady=(0, 8))
-        tk.Label(roadmaps_filter_row, text="Filter", bg=roadmaps_card["bg"]).pack(
-            side="left"
-        )
-        self.roadmaps_filter_entry = Input(
-            roadmaps_filter_row,
-            width=24,
-            textvariable=self.roadmaps_filter_var,
-        )
-        self.roadmaps_filter_entry.pack(side="left", padx=(8, 8))
-        self.roadmaps_filter_entry.bind(
-            "<KeyRelease>",
-            lambda _e: self._apply_roadmaps_filter(),
-        )
-        Button(
-            roadmaps_filter_row,
-            text="Clear",
-            size="sm",
-            variant="secondary",
-            command=self._clear_roadmaps_filter,
-        ).pack(side="left")
-
-        self.roadmaps_table = DataTable(
-            roadmaps_card,
-            ["ID", "Team", "Principal", "Status"],
-            height=8,
-        )
-        self.roadmaps_table.pack(fill="both", expand=True, padx=10, pady=(2, 10))
+        # Recent Roadmaps/Tasks Column
+        tasks_col = tk.Frame(self.grid_container, bg=self["bg"])
+        tasks_col.grid(row=0, column=1, sticky="nsew", padx=4)
+        
+        SectionHeader(tasks_col, title="Active Tasks", subtitle="Tasks in progress across teams").pack(fill="x", padx=4)
+        self.tasks_list = TaskListView(tasks_col, on_task_select=self._view_task)
+        self.tasks_list.pack(fill="both", expand=True, pady=4)
 
     def on_show(self) -> None:
         self._refresh()
@@ -122,71 +63,53 @@ class TeacherHomePage(Page):
         services = self.dashboard.services
         
         if not class_id:
-            self._stats["Students"].set_value("0")
-            self._stats["Teams"].set_value("0")
-            self._stats["Roadmaps"].set_value("0")
-            self.checkins_table.set_rows([])
-            self.roadmaps_table.set_rows([])
-            self._apply_checkins_filter()
-            self._apply_roadmaps_filter()
+            self._clear_data()
             return
             
-        class_svc = services["class"]
-        team_svc = services["team"]
-        roadmap_svc = services["roadmap"]
-        checkin_svc = services["checkin"]
-
-        students = class_svc.list_users(role="student")
-        teams = team_svc.list_teams(class_id)
-        roadmaps = roadmap_svc.list_roadmaps_for_class(class_id)
+        students = services["class"].list_users(role="student")
+        teams = services["team"].list_teams(class_id)
+        roadmaps = services["roadmap"].list_roadmaps_for_class(class_id)
+        
         self._stats["Students"].set_value(str(len(students)))
         self._stats["Teams"].set_value(str(len(teams)))
         self._stats["Roadmaps"].set_value(str(len(roadmaps)))
 
         # Recent check-ins
-        recent_checkins = checkin_svc.list_checkins_for_class(class_id)[:8]
-        checkin_rows = [
-            (
-                c["id"],
-                c["team"],
-                c["status"],
-                f"{c['week_start']} -> {c['week_end']}",
-                f"{c['percent']}%",
-            )
-            for c in recent_checkins
-        ]
-        self.checkins_table.set_rows(checkin_rows)
-        self._apply_checkins_filter()
+        checkins = services["checkin"].list_checkins_for_class(class_id)[:10]
+        self.checkins_list.set_checkins([
+            (c["id"], f"{c['week_start']} → {c['week_end']}", c["status"], f"{c['percent']}%", c["submitted_at"])
+            for c in checkins
+        ])
 
-        # Recent roadmaps
-        roadmap_rows = [
-            (
-                r["id"],
-                r["team"],
-                r.get("principal") or "-",
-                r["status"],
-            )
-            for r in roadmaps[:8]
-        ]
-        self.roadmaps_table.set_rows(roadmap_rows)
-        self._apply_roadmaps_filter()
+        # Active tasks across all teams in this class
+        # (Assuming we have a service method or we aggregate)
+        all_tasks = []
+        for team in teams:
+            roadmap = services["roadmap"].get_latest_roadmap(team["id"])
+            if roadmap:
+                team_tasks = services["task"].list_tasks_for_roadmap(roadmap["id"])
+                # Filter for non-done tasks
+                active = [t for t in team_tasks if t["status"] != "Done"]
+                all_tasks.extend(active)
+        
+        all_tasks.sort(key=lambda x: x["id"], reverse=True)
+        self.tasks_list.set_tasks([
+            (t["id"], f"[{team['name']}] {t['title']}", t["status"], t["weight"])
+            for t in all_tasks[:15]
+        ])
 
-    def _apply_checkins_filter(self) -> None:
-        self.checkins_table.apply_filter(
-            self.checkins_filter_var.get().strip(),
-            columns=(1, 2, 3, 4),
-        )
+    def _clear_data(self) -> None:
+        for card in self._stats.values():
+            card.set_value("0")
+        self.checkins_list.set_checkins([])
+        self.tasks_list.set_tasks([])
 
-    def _clear_checkins_filter(self) -> None:
-        self.checkins_filter_var.set("")
-        self._apply_checkins_filter()
+    def _view_checkin(self, checkin_id: int) -> None:
+        # Switch to checkins page and select this one
+        self.dashboard._navigate("checkins")
+        self.dashboard.pages["checkins"]._on_checkin_selected(checkin_id)
 
-    def _apply_roadmaps_filter(self) -> None:
-        self.roadmaps_table.apply_filter(
-            self.roadmaps_filter_var.get().strip(),
-            columns=(1, 2, 3),
-        )
-
-    def _clear_roadmaps_filter(self) -> None:
-        self.roadmaps_filter_var.set("")
-        self._apply_roadmaps_filter()
+    def _view_task(self, task_id: int) -> None:
+        # Teacher dashboard doesn't have a dedicated "tasks" page yet (tasks are in roadmaps)
+        # For now, just a placeholder or navigate to teams
+        self.dashboard.log.info("Task clicked: %d", task_id)

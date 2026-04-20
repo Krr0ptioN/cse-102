@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import palette
-from libs.ui_kit.design_system import Typography
+from ..design_system import palette
+from ..design_system import Typography
 
 
 class PageHeader(tk.Frame):

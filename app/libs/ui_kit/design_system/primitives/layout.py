@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import palette
+from ..design_system import palette
 
 
 class Container(tk.Frame):

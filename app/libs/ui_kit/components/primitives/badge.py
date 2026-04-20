@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit.design_system import normalize_option
-from libs.ui_kit import ctk, use_ctk
+from ...design_system import semantic_colors
+from ...design_system import normalize_option
+from ._base import ctk, use_ctk
 
 
 BADGE_VARIANTS = ("default", "success", "warning", "danger")
@@ -27,14 +27,16 @@ def Badge(  # noqa: N802
     }
     bg, fg = color_map[selected]
     if use_ctk(master) and ctk is not None:
-        return ctk.CTkLabel(
-            master,
-            text=text,
-            fg_color=bg,
-            text_color=fg,
-            corner_radius=0,
-            padx=8,
-            pady=4,
-            **kwargs,
-        )
-    return tk.Label(master, text=text, bg=bg, fg=fg, padx=8, pady=4, **kwargs)
+        kwargs.setdefault("text", text)
+        kwargs.setdefault("fg_color", bg)
+        kwargs.setdefault("text_color", fg)
+        kwargs.setdefault("corner_radius", 0)
+        kwargs.setdefault("padx", 8)
+        kwargs.setdefault("pady", 4)
+        return ctk.CTkLabel(master, **kwargs)
+    
+    kwargs.setdefault("bg", bg)
+    kwargs.setdefault("fg", fg)
+    kwargs.setdefault("padx", 8)
+    kwargs.setdefault("pady", 4)
+    return tk.Label(master, text=text, **kwargs)

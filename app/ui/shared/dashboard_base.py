@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from libs.logger import get_logger
 from libs.ui_kit import topbar_action
 from libs.ui_kit import AppShell, TeamDrawer
-from ui.shared import resolve_shell
+from .shell_factory import resolve_shell
 
 if TYPE_CHECKING:
     from ui.shared.page import Page
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 class DashboardBase(tk.Frame):
     """Shared scaffold for role dashboards.
 
-    Provides the AppShell, a common content grid, a reusable drawer, and
-    convenience helpers for subclasses to attach actions and layout pieces.
+    Provides the AppShell, a common content grid, and a right-side Slide-Over
+    panel (slide_over) for contextual details and comments.
     """
 
     def __init__(
@@ -35,23 +35,30 @@ class DashboardBase(tk.Frame):
         self.pages: dict[str, Page] = {}
 
         shell_class = shell_cls or resolve_shell()
-        # Initialize shell without nav_items; they will be added via register_page
         self.shell = shell_class(
             self, title, on_back, nav_items=[], on_nav=self._on_nav
         )
         self.shell.pack(fill="both", expand=True)
-        self.log.info("Dashboard initialized: %s", title)
+        
+        # Slide-Over Panel (Contextual Sidebar)
+        # We use TeamDrawer which supports render_team_header
+        self.slide_over = TeamDrawer(self.shell.content, drawer_title)
 
-        # Drawer is available for subclasses to populate.
-        self.drawer = TeamDrawer(self.shell.content, drawer_title)
-
-        # Let subclasses build their specific UI and register pages.
+        # Content area for pages
         self.page_host = tk.Frame(self.shell.content, bg=self.shell.content["bg"])
-        self.page_host.grid(row=1, column=0, sticky="nsew")
-        self.shell.content.grid_rowconfigure(1, weight=1)
+        self.page_host.grid(row=0, column=0, sticky="nsew")
+        
+        # Configure Grid: Column 0 is main content, Column 1 is Slide-Over
+        self.shell.content.grid_rowconfigure(0, weight=1)
         self.shell.content.grid_columnconfigure(0, weight=1)
+        self.shell.content.grid_columnconfigure(1, weight=0, minsize=300) # Fixed width for slide-over
 
+        self.log.info("Dashboard initialized: %s", title)
         self.build_layout()
+
+    def build_layout(self) -> None:
+        """Subclasses should implement this to register pages and configure initial UI."""
+        self.mount_slide_over()
 
     def register_page(self, page: Page) -> None:
         """Register a page instance and add it to the navigation."""
@@ -60,7 +67,6 @@ class DashboardBase(tk.Frame):
             return
         
         self.pages[page.route] = page
-        # Grid all pages to the same spot in page_host; we'll use lift/tkraise to switch
         page.grid(in_=self.page_host, row=0, column=0, sticky="nsew")
         self.page_host.grid_rowconfigure(0, weight=1)
         self.page_host.grid_columnconfigure(0, weight=1)
@@ -86,28 +92,21 @@ class DashboardBase(tk.Frame):
         page.on_show()
         self.log.info("View -> %s", route)
 
-    # ----- Layout helpers -------------------------------------------------
     def configure_content_grid(
-        self, column_weights: tuple[int, ...], drawer_minsize: int = 260
+        self, column_weights: tuple[int, ...], drawer_minsize: int = 300
     ) -> None:
         """Apply consistent grid weights on the shell content area."""
-
         content = self.shell.content
-        content.grid_rowconfigure(1, weight=1)
-        content.grid_rowconfigure(2, weight=1)
-
-        last_index = len(column_weights) - 1
         for idx, weight in enumerate(column_weights):
-            if idx == last_index and drawer_minsize:
+            if idx == 1 and drawer_minsize:
                 content.grid_columnconfigure(idx, weight=weight, minsize=drawer_minsize)
             else:
                 content.grid_columnconfigure(idx, weight=weight)
 
-    def mount_drawer(
-        self, row: int, column: int, rowspan: int = 1, padx: int = 8, pady: int = 8
-    ) -> None:
-        self.drawer.grid(
-            row=row, column=column, rowspan=rowspan, sticky="nsew", padx=padx, pady=pady
+    def mount_slide_over(self, row: int = 0, column: int = 1, rowspan: int = 1) -> None:
+        """Display the slide-over panel on the right side."""
+        self.slide_over.grid(
+            row=row, column=column, rowspan=rowspan, sticky="nsew", padx=8, pady=8
         )
 
     def add_topbar_button(self, text: str, command, side: str = "left") -> None:
@@ -126,9 +125,3 @@ class DashboardBase(tk.Frame):
             "Demo Dataset",
             "You are currently viewing mock/demo data initialized at startup.",
         )
-
-    # ----- Template methods -----------------------------------------------
-    def build_layout(
-        self,
-    ) -> None:  # pragma: no cover - to be implemented by subclasses
-        raise NotImplementedError

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from core.services import AuthenticatedUser
+from .base import Service
+from .auth import AuthenticatedUser
 
 
-class SessionService:
+class SessionService(Service):
     def __init__(self) -> None:
+        # Session service is transient and doesn't need a repository
+        # but we call super for logger consistency
+        super().__init__(None)
         self._current_user: AuthenticatedUser | None = None
 
     def start(self, user: AuthenticatedUser) -> None:

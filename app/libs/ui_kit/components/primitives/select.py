@@ -3,8 +3,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from libs.ui_kit.design_system import semantic_colors
-from libs.ui_kit import ctk, tk_style, use_ctk
+from ...design_system import semantic_colors
+from ._base import ctk, tk_style, use_ctk
 
 
 def Select(  # noqa: N802
@@ -19,29 +19,24 @@ def Select(  # noqa: N802
     variable = variable or tk.StringVar(value=(options[0] if options else ""))
 
     if use_ctk(master) and ctk is not None:
-        return ctk.CTkOptionMenu(
-            master,
-            values=options,
-            variable=variable,
-            fg_color=colors.surface,
-            button_color=colors.panel,
-            button_hover_color=colors.panel,
-            text_color=colors.text,
-            dropdown_fg_color=colors.surface,
-            dropdown_text_color=colors.text,
-            corner_radius=0,
-            **kwargs,
-        )
+        kwargs.setdefault("values", options)
+        kwargs.setdefault("variable", variable)
+        kwargs.setdefault("fg_color", colors.surface)
+        kwargs.setdefault("button_color", colors.panel)
+        kwargs.setdefault("button_hover_color", colors.panel)
+        kwargs.setdefault("text_color", colors.text)
+        kwargs.setdefault("dropdown_fg_color", colors.surface)
+        kwargs.setdefault("dropdown_text_color", colors.text)
+        kwargs.setdefault("corner_radius", 0)
+        return ctk.CTkOptionMenu(master, **kwargs)
 
     tk_style(master)
-    combobox = ttk.Combobox(
-        master,
-        values=options,
-        textvariable=variable,
-        style="Ds.TCombobox",
-        state="readonly",
-        **kwargs,
-    )
+    kwargs.setdefault("values", options)
+    kwargs.setdefault("textvariable", variable)
+    kwargs.setdefault("style", "Ds.TCombobox")
+    kwargs.setdefault("state", "readonly")
+    
+    combobox = ttk.Combobox(master, **kwargs)
     if options:
         combobox.current(0)
     return combobox

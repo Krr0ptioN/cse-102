@@ -71,7 +71,8 @@ class TeacherDashboard(DashboardBase):
         self.class_id = first["id"] if isinstance(first, dict) else first[0]
 
     def build_layout(self) -> None:
-        self.configure_content_grid((1, 1, 0))
+        self.configure_content_grid((1, 0))
+        self.mount_slide_over()
         
         # Instantiate pages (they register themselves with 'self')
         TeacherHomePage(self)
